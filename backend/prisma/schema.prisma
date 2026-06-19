@@ -1,0 +1,387 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  STUDENT
+  OFFICE_STAFF
+  DEAN
+  CHAIR
+  PROFESSOR
+}
+
+enum FacultyPosition {
+  DEAN
+  CHAIR
+  PROFESSOR
+}
+
+enum ConcernStatus {
+  SUBMITTED
+  UNDER_REVIEW
+  IN_PROGRESS
+  TRANSFERRED
+  AWAITING_CONFIRMATION
+  REOPENED
+  RESOLVED
+  CLOSED
+}
+
+enum ConcernVisibility {
+  PUBLIC
+  PRIVATE
+}
+
+enum ConcernTargetType {
+  OFFICE
+  DEPARTMENT
+}
+
+enum AppointmentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  RESCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
+enum AppointmentTargetType {
+  OFFICE
+  DEPARTMENT
+  PROFESSOR
+}
+
+model User {
+  id         String   @id @default(cuid())
+  email      String   @unique
+  password   String
+  firstName  String
+  middleName String?
+  lastName   String
+  role       UserRole
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  studentProfile             StudentProfile?
+  facultyProfile             FacultyProfile?
+  submittedTimelines         ConcernTimeline[]         @relation("ConcernTimelineActor")
+  submittedTransfers         ConcernTransfer[]         @relation("ConcernTransferActor")
+  submittedResolutionReports ResolutionReport[]        @relation("ResolutionReportActor")
+  requestedReschedules       AppointmentReschedule[]   @relation("AppointmentRescheduleRequester")
+  availabilitySchedules      AppointmentAvailability[] @relation("AvailabilityOwner")
+  notifications              Notification[]
+
+  @@index([role])
+  @@index([isActive])
+  @@index([lastName, firstName])
+}
+
+model StudentProfile {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  studentId    String   @unique
+  course       String
+  yearLevel    Int
+  departmentId String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user            User             @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  department      Department       @relation(fields: [departmentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  concerns        Concern[]        @relation("StudentSubmittedConcerns")
+  concernSupports ConcernSupport[]
+  reopenRequests  ReopenRequest[]
+  appointments    Appointment[]
+
+  @@index([departmentId])
+  @@index([course])
+  @@index([yearLevel])
+}
+
+model FacultyProfile {
+  id           String          @id @default(cuid())
+  userId       String          @unique
+  employeeId   String          @unique
+  departmentId String
+  position     FacultyPosition
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+
+  user                User          @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  department          Department    @relation(fields: [departmentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  facultyAppointments Appointment[] @relation("FacultyAppointments")
+
+  @@index([departmentId])
+  @@index([position])
+}
+
+model Department {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  email       String?
+  location    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  students               StudentProfile[]
+  faculty                FacultyProfile[]
+  targetedConcerns       Concern[]         @relation("DepartmentTargetedConcerns")
+  outgoingTransfers      ConcernTransfer[] @relation("ConcernTransferFromDepartment")
+  incomingTransfers      ConcernTransfer[] @relation("ConcernTransferToDepartment")
+  departmentAppointments Appointment[]     @relation("DepartmentAppointments")
+
+  @@index([name])
+}
+
+model Office {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  email       String?
+  location    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  targetedConcerns   Concern[]         @relation("OfficeTargetedConcerns")
+  outgoingTransfers  ConcernTransfer[] @relation("ConcernTransferFromOffice")
+  incomingTransfers  ConcernTransfer[] @relation("ConcernTransferToOffice")
+  officeAppointments Appointment[]     @relation("OfficeAppointments")
+
+  @@index([name])
+}
+
+model Concern {
+  id                 String            @id @default(cuid())
+  referenceNumber    String            @unique
+  title              String
+  description        String
+  status             ConcernStatus     @default(SUBMITTED)
+  visibility         ConcernVisibility @default(PRIVATE)
+  /// Target invariant: OFFICE requires targetOfficeId; DEPARTMENT requires targetDepartmentId.
+  /// Prisma cannot enforce this XOR rule directly; services and/or SQL migrations must validate it.
+  targetType         ConcernTargetType
+  targetOfficeId     String?
+  targetDepartmentId String?
+  submittedById      String
+  resolvedAt         DateTime?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  submittedBy      StudentProfile      @relation("StudentSubmittedConcerns", fields: [submittedById], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  targetOffice     Office?             @relation("OfficeTargetedConcerns", fields: [targetOfficeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  targetDepartment Department?         @relation("DepartmentTargetedConcerns", fields: [targetDepartmentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  attachments      ConcernAttachment[]
+  supports         ConcernSupport[]
+  timeline         ConcernTimeline[]
+  transfers        ConcernTransfer[]
+  resolutionReport ResolutionReport?
+  reopenRequests   ReopenRequest[]
+
+  @@index([status])
+  @@index([visibility])
+  @@index([submittedById])
+  @@index([targetOfficeId])
+  @@index([targetDepartmentId])
+  @@index([targetType])
+  @@index([createdAt])
+}
+
+model ConcernAttachment {
+  id         String   @id @default(cuid())
+  concernId  String
+  fileName   String
+  fileUrl    String
+  mimeType   String
+  fileSize   Int
+  uploadedAt DateTime @default(now())
+
+  concern Concern @relation(fields: [concernId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([concernId])
+  @@index([uploadedAt])
+}
+
+model ConcernSupport {
+  id        String   @id @default(cuid())
+  concernId String
+  studentId String
+  createdAt DateTime @default(now())
+
+  concern Concern        @relation(fields: [concernId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([concernId, studentId])
+  @@index([concernId])
+  @@index([studentId])
+}
+
+model ConcernTimeline {
+  id          String   @id @default(cuid())
+  concernId   String
+  actorId     String
+  eventType   String
+  description String
+  createdAt   DateTime @default(now())
+
+  concern Concern @relation(fields: [concernId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  actor   User    @relation("ConcernTimelineActor", fields: [actorId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([concernId])
+  @@index([actorId])
+  @@index([eventType])
+  @@index([createdAt])
+}
+
+model ConcernTransfer {
+  id               String            @id @default(cuid())
+  concernId        String
+  transferredById  String
+  fromTargetType   ConcernTargetType
+  fromOfficeId     String?
+  fromDepartmentId String?
+  toTargetType     ConcernTargetType
+  toOfficeId       String?
+  toDepartmentId   String?
+  reason           String
+  createdAt        DateTime          @default(now())
+
+  concern        Concern     @relation(fields: [concernId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  transferredBy  User        @relation("ConcernTransferActor", fields: [transferredById], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  fromOffice     Office?     @relation("ConcernTransferFromOffice", fields: [fromOfficeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  fromDepartment Department? @relation("ConcernTransferFromDepartment", fields: [fromDepartmentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  toOffice       Office?     @relation("ConcernTransferToOffice", fields: [toOfficeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  toDepartment   Department? @relation("ConcernTransferToDepartment", fields: [toDepartmentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([concernId])
+  @@index([transferredById])
+  @@index([fromOfficeId])
+  @@index([fromDepartmentId])
+  @@index([toOfficeId])
+  @@index([toDepartmentId])
+  @@index([createdAt])
+}
+
+model ResolutionReport {
+  id           String   @id @default(cuid())
+  concernId    String   @unique
+  summary      String
+  actionsTaken String
+  evidenceUrl  String?
+  resolvedById String
+  resolvedAt   DateTime
+  createdAt    DateTime @default(now())
+
+  concern    Concern @relation(fields: [concernId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  resolvedBy User    @relation("ResolutionReportActor", fields: [resolvedById], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([resolvedById])
+  @@index([resolvedAt])
+}
+
+model ReopenRequest {
+  id        String   @id @default(cuid())
+  concernId String
+  studentId String
+  reason    String
+  createdAt DateTime @default(now())
+
+  concern Concern        @relation(fields: [concernId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([concernId])
+  @@index([studentId])
+  @@index([createdAt])
+}
+
+model Appointment {
+  id           String                @id @default(cuid())
+  title        String
+  description  String?
+  studentId    String
+  /// Target invariant: OFFICE requires officeId; DEPARTMENT requires departmentId; PROFESSOR requires facultyId.
+  /// Prisma cannot enforce this XOR rule directly; services and/or SQL migrations must validate it.
+  targetType   AppointmentTargetType
+  officeId     String?
+  departmentId String?
+  facultyId    String?
+  startTime    DateTime
+  endTime      DateTime
+  status       AppointmentStatus     @default(PENDING)
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+
+  student     StudentProfile          @relation(fields: [studentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  office      Office?                 @relation("OfficeAppointments", fields: [officeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  department  Department?             @relation("DepartmentAppointments", fields: [departmentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  faculty     FacultyProfile?         @relation("FacultyAppointments", fields: [facultyId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  reschedules AppointmentReschedule[]
+
+  @@index([studentId])
+  @@index([status])
+  @@index([startTime])
+  @@index([officeId])
+  @@index([departmentId])
+  @@index([facultyId])
+  @@index([targetType])
+}
+
+model AppointmentAvailability {
+  id           String   @id @default(cuid())
+  ownerUserId  String
+  dayOfWeek    Int
+  startTime    String
+  endTime      String
+  slotDuration Int
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  ownerUser User @relation("AvailabilityOwner", fields: [ownerUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([ownerUserId])
+  @@index([dayOfWeek])
+  @@index([isActive])
+}
+
+model AppointmentReschedule {
+  id            String   @id @default(cuid())
+  appointmentId String
+  oldStartTime  DateTime
+  oldEndTime    DateTime
+  newStartTime  DateTime
+  newEndTime    DateTime
+  reason        String
+  requestedById String
+  createdAt     DateTime @default(now())
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  requestedBy User        @relation("AppointmentRescheduleRequester", fields: [requestedById], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([appointmentId])
+  @@index([requestedById])
+  @@index([createdAt])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([userId, isRead])
+  @@index([createdAt])
+}
