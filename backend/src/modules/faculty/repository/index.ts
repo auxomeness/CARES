@@ -1,1 +1,1 @@
-export {};
+export * from "./faculty.repository";
