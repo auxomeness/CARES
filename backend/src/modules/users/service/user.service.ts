@@ -22,6 +22,7 @@ export const userService = {
       isActive: user.isActive,
       studentProfile: user.studentProfile,
       facultyProfile: user.facultyProfile,
+      officeStaffProfile: user.officeStaffProfile,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt
     };

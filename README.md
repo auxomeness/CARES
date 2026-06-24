@@ -6,7 +6,7 @@ The system centralizes communication between students, university offices, acade
 
 ## Version
 
-0.1.0
+0.5.0
 
 ## Author
 
@@ -56,14 +56,17 @@ The backend currently includes:
 - Standardized API responses
 - Centralized error handling
 - Request logging
+- University directory CRUD, pagination, and search
+- Concern submission with explicit office or department targeting
+- Role-scoped concern queues
+- Concern status transitions and transfers
+- Supabase Storage image attachments
+- Public concern support
+- Resolution reports and student confirmation/rejection
+- Complete concern timeline audit history
 
-The following modules are scaffolded for future implementation:
+The following modules remain reserved for future implementation:
 
-- Users
-- Offices
-- Departments
-- Faculty
-- Concerns
 - Appointments
 - Notifications
 
@@ -175,6 +178,67 @@ The API also exposes versioned auth routes:
 POST /api/v1/auth/login
 GET /api/v1/auth/me
 ```
+
+## Concern Endpoints
+
+All concern endpoints require a bearer token. Versioned routes use `/api/v1`.
+
+```text
+POST   /api/v1/concerns
+GET    /api/v1/concerns
+GET    /api/v1/concerns/:id
+PATCH  /api/v1/concerns/:id/status
+POST   /api/v1/concerns/:id/attachments
+POST   /api/v1/concerns/:id/support
+GET    /api/v1/concerns/:id/timeline
+POST   /api/v1/concerns/:id/transfer
+POST   /api/v1/concerns/:id/resolution
+POST   /api/v1/concerns/:id/confirm
+POST   /api/v1/concerns/:id/reject
+```
+
+Concern submission uses manual target selection. Automatic routing is not implemented.
+
+```json
+{
+  "title": "Portal access issue",
+  "description": "I cannot access the student portal.",
+  "targetType": "OFFICE",
+  "targetOfficeId": "office-cuid",
+  "targetDepartmentId": null,
+  "visibility": "PRIVATE"
+}
+```
+
+Image attachment requests use `multipart/form-data` with one `image` field. Supported
+types are JPEG, PNG, WebP, and GIF up to 5 MB.
+
+Resolution submission:
+
+```json
+{
+  "summary": "Portal account access restored",
+  "actionsTaken": "Reset the account lock and verified successful login.",
+  "evidenceUrl": "https://example.com/evidence.png"
+}
+```
+
+Transfer submission:
+
+```json
+{
+  "toTargetType": "DEPARTMENT",
+  "toOfficeId": null,
+  "toDepartmentId": "department-cuid",
+  "reason": "This concern requires academic department review."
+}
+```
+
+The seeded `office.staff@adnu.edu.ph` account is assigned to the MIS office. All
+development seed accounts use `password123`.
+
+Complete request and response examples are available in
+[`backend/docs/concerns-api.md`](backend/docs/concerns-api.md).
 
 ## License
 

@@ -23,6 +23,11 @@ export const userRepository = {
           include: {
             department: true
           }
+        },
+        officeStaffProfile: {
+          include: {
+            office: true
+          }
         }
       }
     });

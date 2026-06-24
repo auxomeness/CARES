@@ -72,6 +72,7 @@ model User {
 
   studentProfile             StudentProfile?
   facultyProfile             FacultyProfile?
+  officeStaffProfile         OfficeStaffProfile?
   submittedTimelines         ConcernTimeline[]         @relation("ConcernTimelineActor")
   submittedTransfers         ConcernTransfer[]         @relation("ConcernTransferActor")
   submittedResolutionReports ResolutionReport[]        @relation("ResolutionReportActor")
@@ -123,6 +124,19 @@ model FacultyProfile {
   @@index([position])
 }
 
+model OfficeStaffProfile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  officeId  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  office Office @relation(fields: [officeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([officeId])
+}
+
 model Department {
   id          String   @id @default(cuid())
   name        String   @unique
@@ -151,10 +165,11 @@ model Office {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  targetedConcerns   Concern[]         @relation("OfficeTargetedConcerns")
-  outgoingTransfers  ConcernTransfer[] @relation("ConcernTransferFromOffice")
-  incomingTransfers  ConcernTransfer[] @relation("ConcernTransferToOffice")
-  officeAppointments Appointment[]     @relation("OfficeAppointments")
+  targetedConcerns   Concern[]            @relation("OfficeTargetedConcerns")
+  outgoingTransfers  ConcernTransfer[]    @relation("ConcernTransferFromOffice")
+  incomingTransfers  ConcernTransfer[]    @relation("ConcernTransferToOffice")
+  officeAppointments Appointment[]        @relation("OfficeAppointments")
+  staff              OfficeStaffProfile[]
 
   @@index([name])
 }
@@ -193,6 +208,8 @@ model Concern {
   @@index([targetDepartmentId])
   @@index([targetType])
   @@index([createdAt])
+  @@index([targetOfficeId, status])
+  @@index([targetDepartmentId, status])
 }
 
 model ConcernAttachment {
