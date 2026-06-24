@@ -4,6 +4,8 @@ import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 
 import { authRoutes } from "./modules/auth/auth.routes";
+import { appointmentRoutes } from "./modules/appointments/routes/appointment.routes";
+import { availabilityRoutes } from "./modules/appointments/routes/availability.routes";
 import { concernRoutes } from "./modules/concerns/routes/concern.routes";
 import { departmentRoutes } from "./modules/departments/routes/department.routes";
 import { directoryRoutes } from "./modules/directory/routes/directory.routes";
@@ -57,6 +59,10 @@ app.use("/directory", directoryRoutes);
 app.use("/api/v1/directory", directoryRoutes);
 app.use("/concerns", concernRoutes);
 app.use("/api/v1/concerns", concernRoutes);
+app.use("/appointments", appointmentRoutes);
+app.use("/api/v1/appointments", appointmentRoutes);
+app.use("/availability", availabilityRoutes);
+app.use("/api/v1/availability", availabilityRoutes);
 
 app.use(notFoundHandler);
 app.use(globalErrorHandler);

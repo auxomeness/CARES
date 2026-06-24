@@ -116,9 +116,10 @@ model FacultyProfile {
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
 
-  user                User          @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  department          Department    @relation(fields: [departmentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
-  facultyAppointments Appointment[] @relation("FacultyAppointments")
+  user                  User                      @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  department            Department                @relation(fields: [departmentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  facultyAppointments   Appointment[]             @relation("FacultyAppointments")
+  availabilitySchedules AppointmentAvailability[] @relation("FacultyAvailability")
 
   @@index([departmentId])
   @@index([position])
@@ -148,10 +149,11 @@ model Department {
 
   students               StudentProfile[]
   faculty                FacultyProfile[]
-  targetedConcerns       Concern[]         @relation("DepartmentTargetedConcerns")
-  outgoingTransfers      ConcernTransfer[] @relation("ConcernTransferFromDepartment")
-  incomingTransfers      ConcernTransfer[] @relation("ConcernTransferToDepartment")
-  departmentAppointments Appointment[]     @relation("DepartmentAppointments")
+  targetedConcerns       Concern[]                 @relation("DepartmentTargetedConcerns")
+  outgoingTransfers      ConcernTransfer[]         @relation("ConcernTransferFromDepartment")
+  incomingTransfers      ConcernTransfer[]         @relation("ConcernTransferToDepartment")
+  departmentAppointments Appointment[]             @relation("DepartmentAppointments")
+  availabilitySchedules  AppointmentAvailability[] @relation("DepartmentAvailability")
 
   @@index([name])
 }
@@ -165,11 +167,12 @@ model Office {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  targetedConcerns   Concern[]            @relation("OfficeTargetedConcerns")
-  outgoingTransfers  ConcernTransfer[]    @relation("ConcernTransferFromOffice")
-  incomingTransfers  ConcernTransfer[]    @relation("ConcernTransferToOffice")
-  officeAppointments Appointment[]        @relation("OfficeAppointments")
-  staff              OfficeStaffProfile[]
+  targetedConcerns      Concern[]                 @relation("OfficeTargetedConcerns")
+  outgoingTransfers     ConcernTransfer[]         @relation("ConcernTransferFromOffice")
+  incomingTransfers     ConcernTransfer[]         @relation("ConcernTransferToOffice")
+  officeAppointments    Appointment[]             @relation("OfficeAppointments")
+  staff                 OfficeStaffProfile[]
+  availabilitySchedules AppointmentAvailability[] @relation("OfficeAvailability")
 
   @@index([name])
 }
@@ -320,21 +323,24 @@ model ReopenRequest {
 }
 
 model Appointment {
-  id           String                @id @default(cuid())
-  title        String
-  description  String?
-  studentId    String
+  id              String                @id @default(cuid())
+  title           String
+  description     String?
+  studentId       String
   /// Target invariant: OFFICE requires officeId; DEPARTMENT requires departmentId; PROFESSOR requires facultyId.
   /// Prisma cannot enforce this XOR rule directly; services and/or SQL migrations must validate it.
-  targetType   AppointmentTargetType
-  officeId     String?
-  departmentId String?
-  facultyId    String?
-  startTime    DateTime
-  endTime      DateTime
-  status       AppointmentStatus     @default(PENDING)
-  createdAt    DateTime              @default(now())
-  updatedAt    DateTime              @updatedAt
+  targetType      AppointmentTargetType
+  officeId        String?
+  departmentId    String?
+  facultyId       String?
+  startTime       DateTime
+  endTime         DateTime
+  status          AppointmentStatus     @default(PENDING)
+  rejectionReason String?
+  cancelledAt     DateTime?
+  completedAt     DateTime?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @updatedAt
 
   student     StudentProfile          @relation(fields: [studentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   office      Office?                 @relation("OfficeAppointments", fields: [officeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
@@ -349,23 +355,39 @@ model Appointment {
   @@index([departmentId])
   @@index([facultyId])
   @@index([targetType])
+  @@index([officeId, status, startTime])
+  @@index([departmentId, status, startTime])
+  @@index([facultyId, status, startTime])
+  @@index([studentId, status, startTime])
 }
 
 model AppointmentAvailability {
-  id           String   @id @default(cuid())
+  id           String                @id @default(cuid())
   ownerUserId  String
+  targetType   AppointmentTargetType
+  officeId     String?
+  departmentId String?
+  facultyId    String?
   dayOfWeek    Int
   startTime    String
   endTime      String
   slotDuration Int
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
+  isActive     Boolean               @default(true)
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
 
-  ownerUser User @relation("AvailabilityOwner", fields: [ownerUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  ownerUser  User            @relation("AvailabilityOwner", fields: [ownerUserId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  office     Office?         @relation("OfficeAvailability", fields: [officeId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  department Department?     @relation("DepartmentAvailability", fields: [departmentId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  faculty    FacultyProfile? @relation("FacultyAvailability", fields: [facultyId], references: [id], onDelete: Restrict, onUpdate: Cascade)
 
   @@index([ownerUserId])
   @@index([dayOfWeek])
   @@index([isActive])
+  @@index([officeId, dayOfWeek, isActive])
+  @@index([departmentId, dayOfWeek, isActive])
+  @@index([facultyId, dayOfWeek, isActive])
+  @@index([targetType])
 }
 
 model AppointmentReschedule {

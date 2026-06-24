@@ -6,7 +6,7 @@ The system centralizes communication between students, university offices, acade
 
 ## Version
 
-0.5.0
+0.6.0
 
 ## Author
 
@@ -64,10 +64,15 @@ The backend currently includes:
 - Public concern support
 - Resolution reports and student confirmation/rejection
 - Complete concern timeline audit history
+- Office, department, and professor appointment booking
+- Entity-owned recurring availability schedules
+- Generated bookable calendar slots
+- Appointment approval, rejection, cancellation, and completion
+- Appointment rescheduling with history
+- Service and database-level overlap prevention
 
 The following modules remain reserved for future implementation:
 
-- Appointments
 - Notifications
 
 ## Roles
@@ -239,6 +244,31 @@ development seed accounts use `password123`.
 
 Complete request and response examples are available in
 [`backend/docs/concerns-api.md`](backend/docs/concerns-api.md).
+
+## Appointment Endpoints
+
+```text
+POST   /api/v1/appointments
+GET    /api/v1/appointments
+GET    /api/v1/appointments/:id
+PATCH  /api/v1/appointments/:id/approve
+PATCH  /api/v1/appointments/:id/reject
+PATCH  /api/v1/appointments/:id/cancel
+POST   /api/v1/appointments/:id/reschedule
+PATCH  /api/v1/appointments/:id/complete
+
+POST   /api/v1/availability
+GET    /api/v1/availability/:ownerId
+GET    /api/v1/availability/:ownerId/slots
+PATCH  /api/v1/availability/:id
+DELETE /api/v1/availability/:id
+```
+
+Availability and slot generation use the `Asia/Manila` timezone. Weekly schedules
+use ISO weekdays where Monday is `1` and Sunday is `7`.
+
+Complete appointment examples are available in
+[`backend/docs/appointments-api.md`](backend/docs/appointments-api.md).
 
 ## License
 

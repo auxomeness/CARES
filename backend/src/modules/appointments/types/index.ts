@@ -1,1 +1,1 @@
-export {};
+export * from "./appointment.types";

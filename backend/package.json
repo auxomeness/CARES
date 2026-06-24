@@ -1,6 +1,6 @@
 {
   "name": "cares-backend",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Backend foundation for CARES (Centralized Ateneo Response and Engagement System).",
   "main": "dist/server.js",
   "scripts": {
