@@ -14,7 +14,7 @@ export type AuthModeConfig = {
   desktopLead: string
   mobileTitle: string
   mobileLead: string
-  mobileSwitch?: {
+  switchLink?: {
     label: string
     action: string
     target: AuthMode

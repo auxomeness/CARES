@@ -1,6 +1,5 @@
-import { studentWorkspaceConfig } from '../../features/student'
-import { RoleWorkspaceLayout } from '../../layouts/RoleWorkspaceLayout'
+import { StudentHome } from '../../features/student'
 
 export function StudentDashboardPage() {
-  return <RoleWorkspaceLayout config={studentWorkspaceConfig} />
+  return <StudentHome />
 }

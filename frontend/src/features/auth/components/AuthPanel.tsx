@@ -37,7 +37,7 @@ export function AuthPanel({ config, mode, onModeChange }: AuthPanelProps) {
           </p>
         </div>
 
-        <AuthForm config={config} mode={mode} />
+        <AuthForm config={config} mode={mode} onModeChange={onModeChange} />
 
         <div
           className={`ml-[-13px] h-px w-[317px] max-w-[calc(100vw-78px)] bg-[#1b3a6b] lg:ml-[-3px] lg:w-[469px] lg:max-w-none ${
@@ -45,17 +45,6 @@ export function AuthPanel({ config, mode, onModeChange }: AuthPanelProps) {
           }`}
           aria-hidden="true"
         />
-
-        {config.mobileSwitch ? (
-          <button
-            className="mx-auto mt-[15px] block cursor-pointer border-0 bg-transparent p-0 text-center text-[12px] font-medium leading-none tracking-[0.48px] text-[#1b3a6b] lg:hidden"
-            onClick={() => onModeChange(config.mobileSwitch!.target)}
-            type="button"
-          >
-            {config.mobileSwitch.label}{' '}
-            <span className="font-extrabold">{config.mobileSwitch.action}</span>
-          </button>
-        ) : null}
 
         <p className="absolute bottom-[29px] left-5 right-5 m-0 text-center text-[12px] font-light leading-[1.15] tracking-[0.72px] text-[#1b3a6b] lg:hidden">
           Centralized Ateneo Response and Engagement System

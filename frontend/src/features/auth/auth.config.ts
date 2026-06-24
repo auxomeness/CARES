@@ -10,7 +10,7 @@ export const authModes: Record<AuthMode, AuthModeConfig> = {
     desktopLead: 'Sign in with your username or email to track or submit concerns.',
     mobileTitle: 'Welcome!',
     mobileLead: 'Sign in and get the latest updates for a better campus.',
-    mobileSwitch: {
+    switchLink: {
       label: 'No Account?',
       action: 'Register here!',
       target: 'register',
@@ -37,6 +37,11 @@ export const authModes: Record<AuthMode, AuthModeConfig> = {
     desktopLead: 'Create an account and get the latest updates for a better campus.',
     mobileTitle: 'Hello there!',
     mobileLead: 'Create an account and get the latest updates for a better campus.',
+    switchLink: {
+      label: 'Already have an account?',
+      action: 'Sign in here!',
+      target: 'login',
+    },
     fields: [
       {
         id: 'username',

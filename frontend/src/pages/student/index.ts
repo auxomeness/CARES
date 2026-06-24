@@ -1,1 +1,8 @@
 export { StudentDashboardPage } from './StudentDashboardPage'
+export { StudentFeedPage } from './StudentFeedPage'
+export { StudentConcernsPage } from './StudentConcernsPage'
+export { StudentConcernFormPage } from './StudentConcernFormPage'
+export { StudentAppointmentsPage } from './StudentAppointmentsPage'
+export { StudentAppointmentFormPage } from './StudentAppointmentFormPage'
+export { StudentDirectoriesPage } from './StudentDirectoriesPage'
+export { StudentDirectoryDetailPage } from './StudentDirectoryDetailPage'

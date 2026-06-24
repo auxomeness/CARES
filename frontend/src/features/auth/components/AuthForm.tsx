@@ -5,10 +5,12 @@ import { AuthOptions } from './AuthOptions'
 type AuthFormProps = {
   config: AuthModeConfig
   mode: AuthMode
+  onModeChange: (mode: AuthMode) => void
 }
 
-export function AuthForm({ config, mode }: AuthFormProps) {
+export function AuthForm({ config, mode, onModeChange }: AuthFormProps) {
   const isRegister = mode === 'register'
+  const switchLink = config.switchLink
 
   return (
     <form
@@ -35,6 +37,16 @@ export function AuthForm({ config, mode }: AuthFormProps) {
       >
         {config.action}
       </button>
+
+      {switchLink ? (
+        <button
+          className="mx-auto mt-[15px] block cursor-pointer border-0 bg-transparent p-0 text-center text-[12px] font-medium leading-none tracking-[0.48px] text-[#1b3a6b] lg:text-[13px] lg:tracking-[0.52px]"
+          onClick={() => onModeChange(switchLink.target)}
+          type="button"
+        >
+          {switchLink.label} <span className="font-extrabold">{switchLink.action}</span>
+        </button>
+      ) : null}
     </form>
   )
 }
