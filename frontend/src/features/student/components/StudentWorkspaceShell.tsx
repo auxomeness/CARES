@@ -53,7 +53,7 @@ export function StudentWorkspaceShell({
       />
 
       <div
-        className={`min-h-svh min-w-0 flex-1 px-4 pb-[92px] pt-6 sm:px-6 lg:flex lg:gap-7 lg:px-0 lg:pb-14 lg:pl-6 lg:pr-8 lg:pt-11 ${workspaceClassName}`}
+        className={`min-h-svh min-w-0 flex-1 px-4 pb-[92px] pt-20 sm:px-6 lg:flex lg:gap-7 lg:px-0 lg:pb-14 lg:pl-6 lg:pr-8 lg:pt-20 ${workspaceClassName}`}
       >
         <section className={`min-w-0 flex-1 ${contentClassName}`}>{children}</section>
         {rightRail}

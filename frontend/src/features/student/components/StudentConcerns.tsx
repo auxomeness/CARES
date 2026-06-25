@@ -34,10 +34,10 @@ export function StudentConcerns() {
 
   return (
     <StudentWorkspaceShell activeSection="concerns" contentClassName="max-w-none">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <DashboardHeader title="My Concerns" subtitle="Track status, evidence, and resolution history." />
         <LoadingLink
-          className="inline-flex h-10 items-center gap-2 rounded-[5px] bg-[#1b3a6b] px-4 text-sm font-semibold text-white no-underline"
+          className="inline-flex h-10 w-full shrink-0 items-center justify-center gap-2 rounded-[5px] bg-[#1b3a6b] px-4 text-sm font-semibold text-white no-underline sm:w-auto"
           href="#student-concern-new"
         >
           <FileText size={16} /> Add Concern

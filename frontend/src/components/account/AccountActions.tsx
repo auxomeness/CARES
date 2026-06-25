@@ -25,7 +25,7 @@ export function AccountActions() {
 
   return (
     <>
-      <div className="fixed right-4 top-4 z-30 flex gap-2">
+      <div className="fixed right-4 top-3 z-30 flex gap-2 sm:right-6 lg:right-8">
         <button
           aria-label="Notifications"
           className="relative grid size-10 place-items-center rounded-full border border-[#1b3a6b] bg-white text-[#1b3a6b] shadow-md"
@@ -50,7 +50,7 @@ export function AccountActions() {
       </div>
 
       {open ? (
-        <aside className="fixed right-4 top-16 z-40 max-h-[75vh] w-[min(380px,calc(100vw-2rem))] overflow-y-auto rounded-[7px] border border-[#1b3a6b] bg-white p-4 shadow-xl">
+        <aside className="fixed right-4 top-16 z-40 max-h-[75vh] w-[min(380px,calc(100vw-2rem))] overflow-y-auto rounded-[7px] border border-[#1b3a6b] bg-white p-4 shadow-xl sm:right-6 lg:right-8">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-[#1b3a6b]">
               {open === 'notifications' ? 'Notifications' : 'My Profile'}

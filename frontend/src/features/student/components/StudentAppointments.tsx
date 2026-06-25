@@ -53,9 +53,9 @@ export function StudentAppointments() {
 
   return (
     <StudentWorkspaceShell activeSection="appointments" contentClassName="max-w-none">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <DashboardHeader title="My Appointments" subtitle="Review appointment requests and their current status." />
-        <LoadingLink className="inline-flex h-10 items-center gap-2 rounded bg-[#1b3a6b] px-4 text-sm font-semibold text-white no-underline" href="#student-appointment-new">
+        <LoadingLink className="inline-flex h-10 w-full shrink-0 items-center justify-center gap-2 rounded bg-[#1b3a6b] px-4 text-sm font-semibold text-white no-underline sm:w-auto" href="#student-appointment-new">
           <Plus size={16} /> New Appointment
         </LoadingLink>
       </div>
