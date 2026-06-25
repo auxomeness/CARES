@@ -124,6 +124,23 @@ const studentMobileNavBaseItems: Array<NavigationItem & { section: StudentSectio
     label: 'Directories',
     href: '#student-directories-office',
     icon: Briefcase,
+    children: [
+      {
+        label: 'Office',
+        href: '#student-directories-office',
+        icon: Building2,
+      },
+      {
+        label: 'Department',
+        href: '#student-directories-department',
+        icon: GraduationCap,
+      },
+      {
+        label: 'Faculty',
+        href: '#student-directories-faculty',
+        icon: User,
+      },
+    ],
   },
   {
     section: 'profile',

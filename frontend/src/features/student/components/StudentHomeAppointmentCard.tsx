@@ -1,13 +1,13 @@
 import { CalendarDays, Clock } from 'lucide-react'
-import { LoadingLink } from '@/components/feedback/LoadingLink'
 import type { StudentAppointment } from '../studentData.types'
 import { getAppointmentStatusClass } from '../studentUi'
 
 type StudentHomeAppointmentCardProps = {
   appointment: StudentAppointment
+  onView: (appointment: StudentAppointment) => void
 }
 
-export function StudentHomeAppointmentCard({ appointment }: StudentHomeAppointmentCardProps) {
+export function StudentHomeAppointmentCard({ appointment, onView }: StudentHomeAppointmentCardProps) {
   return (
     <article className="flex min-h-[150px] flex-col rounded-[5px] border border-[#295498]/70 bg-white px-4 py-4 shadow-[3px_3px_2.5px_1px_#1b3a6b] transition duration-200 hover:-translate-y-0.5 hover:shadow-[4px_5px_4px_1px_#1b3a6b] active:scale-[0.995]">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -48,12 +48,13 @@ export function StudentHomeAppointmentCard({ appointment }: StudentHomeAppointme
           </span>
         </div>
 
-        <LoadingLink
+        <button
           className="relative inline-flex h-[30px] min-w-[118px] items-center justify-center overflow-hidden rounded-[5px] bg-[#1b3a6b] px-3 text-[12px] font-semibold leading-none !text-white no-underline transition duration-200 hover:bg-[#295498] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9fbef1] active:scale-[0.98] [&_*]:!text-white"
-          href="#student-appointments"
+          onClick={() => onView(appointment)}
+          type="button"
         >
           View Appointment
-        </LoadingLink>
+        </button>
       </div>
     </article>
   )

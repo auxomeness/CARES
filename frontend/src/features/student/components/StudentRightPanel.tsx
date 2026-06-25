@@ -9,7 +9,7 @@ export function StudentRightPanel() {
   const NotificationIcon = studentNotificationIcon
 
   return (
-    <aside className="hidden w-[280px] shrink-0 pt-[15px] xl:block">
+    <aside className="hidden w-[350px] shrink-0 pt-[15px] xl:block">
       <SearchField className="h-9 w-full" />
 
       <section className="mt-[68px] min-h-[197px] rounded-[15px] border border-[#1b3a6b] bg-[#c1d9ff] px-[17px] py-4 shadow-[0_4px_4px_0_#1b3a6b] transition duration-200 hover:-translate-y-0.5 hover:shadow-[0_6px_6px_0_#1b3a6b]">

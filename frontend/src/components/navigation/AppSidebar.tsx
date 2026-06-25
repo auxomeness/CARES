@@ -21,8 +21,8 @@ function SidebarUtilityLink({ item }: { item: NavigationUtilityItem }) {
       <details className="group" open={item.active}>
         <summary
           aria-current={item.active ? 'page' : undefined}
-          className={`flex h-[43px] cursor-pointer list-none items-center gap-[15px] rounded-md px-[18px] text-[22px] leading-none transition duration-200 hover:bg-[#295498] hover:text-[#f7f4ec] focus-visible:bg-[#295498] focus-visible:text-[#f7f4ec] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9fbef1] active:scale-[0.99] [&::-webkit-details-marker]:hidden ${
-            item.active ? 'font-semibold text-[#f7f4ec]' : 'font-medium text-[#aeaeae]'
+          className={`flex h-[43px] cursor-pointer list-none items-center gap-[15px] rounded-md px-[18px] text-[22px] leading-none text-white transition duration-200 hover:translate-x-1 hover:bg-[#295498] hover:shadow-[0_8px_18px_rgba(14,35,70,0.22)] focus-visible:bg-[#295498] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9fbef1] active:scale-[0.99] [&::-webkit-details-marker]:hidden ${
+            item.active ? 'font-semibold' : 'font-medium opacity-80 hover:opacity-100'
           }`}
         >
           <Icon aria-hidden="true" size={24} strokeWidth={2} />
@@ -44,8 +44,8 @@ function SidebarUtilityLink({ item }: { item: NavigationUtilityItem }) {
             return (
               <a
                 aria-current={child.active ? 'page' : undefined}
-                className={`inline-flex h-9 items-center gap-2 rounded-md px-3 text-[14px] no-underline transition duration-200 hover:bg-[#295498] hover:text-white active:scale-[0.99] ${
-                  child.active ? 'bg-[#295498] font-semibold text-white' : 'font-medium text-[#d9d9d9]'
+                className={`inline-flex h-9 items-center gap-2 rounded-md px-3 text-[14px] text-white no-underline transition duration-200 hover:translate-x-1 hover:bg-[#295498] active:scale-[0.99] ${
+                  child.active ? 'bg-[#295498] font-semibold' : 'font-medium opacity-80 hover:opacity-100'
                 }`}
                 href={child.href}
                 key={child.label}
@@ -63,8 +63,8 @@ function SidebarUtilityLink({ item }: { item: NavigationUtilityItem }) {
   return (
     <a
       aria-current={item.active ? 'page' : undefined}
-      className={`flex h-[43px] items-center gap-[15px] rounded-md px-[18px] text-[22px] leading-none no-underline transition duration-200 hover:bg-[#295498] hover:text-[#f7f4ec] focus-visible:bg-[#295498] focus-visible:text-[#f7f4ec] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9fbef1] active:scale-[0.99] ${
-        item.active ? 'font-semibold text-[#f7f4ec]' : 'font-medium text-[#aeaeae]'
+      className={`flex h-[43px] items-center gap-[15px] rounded-md px-[18px] text-[22px] leading-none text-white no-underline transition duration-200 hover:translate-x-1 hover:bg-[#295498] hover:shadow-[0_8px_18px_rgba(14,35,70,0.22)] focus-visible:bg-[#295498] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9fbef1] active:scale-[0.99] ${
+        item.active ? 'font-semibold' : 'font-medium opacity-80 hover:opacity-100'
       }`}
       href={item.href}
     >
@@ -99,8 +99,8 @@ export function AppSidebar({ brand, items, profile, utilityItem }: AppSidebarPro
           return (
             <a
               aria-current={item.active ? 'page' : undefined}
-              className={`flex h-[43px] items-center gap-[15px] rounded-md px-[18px] text-[20px] leading-none no-underline transition duration-200 hover:bg-[#295498] hover:text-[#f7f4ec] focus-visible:bg-[#295498] focus-visible:text-[#f7f4ec] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9fbef1] active:scale-[0.99] ${
-                item.active ? 'font-semibold text-[#f7f4ec]' : 'font-medium text-[#aeaeae]'
+              className={`flex h-[43px] items-center gap-[15px] rounded-md px-[18px] text-[20px] leading-none text-white no-underline transition duration-200 hover:translate-x-1 hover:bg-[#295498] hover:shadow-[0_8px_18px_rgba(14,35,70,0.22)] focus-visible:bg-[#295498] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9fbef1] active:scale-[0.99] ${
+                item.active ? 'font-semibold' : 'font-medium opacity-80 hover:opacity-100'
               }`}
               href={item.href}
               key={item.label}

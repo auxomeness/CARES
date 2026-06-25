@@ -78,13 +78,16 @@ export function StudentDirectories({ kind }: StudentDirectoriesProps) {
 
   if (!kind) {
     return (
-      <StudentWorkspaceShell activeSection="offices" contentClassName="max-w-[930px]">
+      <StudentWorkspaceShell activeSection="offices" contentClassName="max-w-none">
         <DashboardHeader
           title="Directories"
           subtitle="Choose a directory level before viewing records."
         />
 
-        <section className="mt-8 grid gap-5 md:grid-cols-3" aria-label="Directory levels">
+        <section
+          className="mt-8 grid gap-5 [grid-template-columns:repeat(auto-fit,minmax(260px,1fr))]"
+          aria-label="Directory levels"
+        >
           {directoryGroups.map((group) => {
             const Icon = group.icon
 
@@ -117,14 +120,14 @@ export function StudentDirectories({ kind }: StudentDirectoriesProps) {
   const pageMeta = directoryMeta[kind]
 
   return (
-    <StudentWorkspaceShell activeSection="offices" contentClassName="max-w-[930px]">
-      <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+    <StudentWorkspaceShell activeSection="offices" contentClassName="max-w-none">
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-start">
         <DashboardHeader
           title={pageMeta.title}
           subtitle={pageMeta.subtitle}
         />
         <SearchField
-          className="h-9 w-full xl:w-[300px]"
+          className="h-9 w-full"
           label="Search directories"
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Search"
@@ -133,7 +136,7 @@ export function StudentDirectories({ kind }: StudentDirectoriesProps) {
       </div>
 
       <section
-        className="mt-8 grid gap-5 md:grid-cols-2 2xl:grid-cols-3"
+        className="mt-8 grid gap-5 [grid-template-columns:repeat(auto-fit,minmax(280px,1fr))]"
         aria-label="Directory entries"
       >
         {filteredEntries.map((entry) => (

@@ -5,6 +5,7 @@ export type NavigationItem = {
   href: string
   icon: LucideIcon
   active?: boolean
+  children?: NavigationItem[]
 }
 
 export type NavigationUtilityItem = NavigationItem & {

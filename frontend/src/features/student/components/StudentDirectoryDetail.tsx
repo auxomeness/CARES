@@ -12,7 +12,7 @@ export function StudentDirectoryDetail() {
 
   if (!entry) {
     return (
-      <StudentWorkspaceShell activeSection="offices" contentClassName="max-w-[760px]">
+      <StudentWorkspaceShell activeSection="offices" contentClassName="max-w-none">
         <div className="rounded-[5px] border border-[#295498]/70 bg-white px-5 py-8 text-center shadow-[3px_3px_2.5px_1px_#1b3a6b]">
           <h1 className="m-0 text-[26px] font-bold text-[#1b3a6b]">Directory Not Found</h1>
           <p className="m-0 mt-3 text-[14px] text-[#434343]">
@@ -32,7 +32,7 @@ export function StudentDirectoryDetail() {
   const Icon = entry.icon
 
   return (
-    <StudentWorkspaceShell activeSection="offices" contentClassName="max-w-[930px]">
+    <StudentWorkspaceShell activeSection="offices" contentClassName="max-w-none">
       <LoadingLink
         className="relative inline-flex h-9 items-center justify-center gap-2 overflow-hidden rounded-[5px] border border-[#1b3a6b] bg-white px-4 text-[12px] font-semibold text-[#1b3a6b] no-underline transition duration-200 hover:bg-[#edf4ff] active:scale-[0.98]"
         href="#student-directories"
@@ -94,7 +94,7 @@ export function StudentDirectoryDetail() {
         </div>
       </section>
 
-      <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_300px]">
+      <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_390px] xl:items-start">
         <section className="rounded-[5px] border border-[#295498]/70 bg-white px-5 py-5 shadow-[3px_3px_2.5px_1px_#1b3a6b]">
           <h2 className="m-0 text-[20px] font-semibold text-[#1b3a6b]">Main Concerns</h2>
           <div className="mt-4 grid gap-3">

@@ -3,10 +3,14 @@ import { officeOptions } from '../studentData.config'
 import type { StudentConcern } from '../studentData.types'
 
 type StudentFeedInsightsProps = {
+  className?: string
   concerns: StudentConcern[]
 }
 
-export function StudentFeedInsights({ concerns }: StudentFeedInsightsProps) {
+export function StudentFeedInsights({
+  className = 'hidden w-[350px] shrink-0 pt-[262px] xl:block',
+  concerns,
+}: StudentFeedInsightsProps) {
   const categoryCounts = concerns.reduce<Record<string, number>>((counts, concern) => {
     counts[concern.category] = (counts[concern.category] ?? 0) + 1
     return counts
@@ -17,7 +21,7 @@ export function StudentFeedInsights({ concerns }: StudentFeedInsightsProps) {
     .slice(0, 4)
 
   return (
-    <aside className="hidden w-[280px] shrink-0 pt-[112px] xl:block">
+    <aside className={className}>
       <section className="rounded-[15px] border border-[#1b3a6b] bg-[#c1d9ff] px-4 py-4 shadow-[0_4px_4px_0_#1b3a6b] transition duration-200 hover:-translate-y-0.5">
         <div className="flex items-center gap-2">
           <TrendingUp aria-hidden="true" size={18} strokeWidth={2.2} />

@@ -1,6 +1,6 @@
 export function StudentRightPanelSkeleton() {
   return (
-    <aside className="hidden w-[280px] shrink-0 pt-[15px] xl:block" aria-label="Loading dashboard panels">
+    <aside className="hidden w-[350px] shrink-0 pt-[15px] xl:block" aria-label="Loading dashboard panels">
       <div className="h-9 w-full animate-pulse rounded-[29px] border border-[#1b3a6b]/40 bg-white" />
 
       <section className="mt-[68px] min-h-[197px] animate-pulse rounded-[15px] border border-[#1b3a6b]/60 bg-[#c1d9ff] px-[17px] py-4 shadow-[0_4px_4px_0_#1b3a6b]">

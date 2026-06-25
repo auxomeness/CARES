@@ -28,7 +28,7 @@ export function StudentWorkspaceShell({
   const currentHash = window.location.hash.toLowerCase()
 
   return (
-    <main className="min-h-svh bg-[#f2f2f2] text-[#101010] lg:flex">
+    <main className="min-h-svh overflow-x-hidden bg-[#f2f2f2] text-[#101010] lg:flex">
       <AppSidebar
         brand={studentHomeBrand}
         items={getStudentHomeNavItems(activeSection)}
@@ -44,7 +44,7 @@ export function StudentWorkspaceShell({
       />
 
       <div
-        className={`min-h-svh flex-1 px-4 pb-[92px] pt-6 sm:px-6 lg:flex lg:w-[calc(100vw-287px)] lg:flex-none lg:gap-7 lg:px-0 lg:pb-14 lg:pl-6 lg:pr-8 lg:pt-11 ${workspaceClassName}`}
+        className={`min-h-svh min-w-0 flex-1 px-4 pb-[92px] pt-6 sm:px-6 lg:flex lg:gap-7 lg:px-0 lg:pb-14 lg:pl-6 lg:pr-8 lg:pt-11 ${workspaceClassName}`}
       >
         <section className={`min-w-0 flex-1 ${contentClassName}`}>{children}</section>
         {rightRail}
