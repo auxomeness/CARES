@@ -1,1 +1,1 @@
-export {};
+export * from "./office.repository";

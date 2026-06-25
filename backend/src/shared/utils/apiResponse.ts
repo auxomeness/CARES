@@ -12,6 +12,12 @@ export type ApiErrorResponse = {
   errors: unknown[];
 };
 
+export type PaginationMeta = {
+  page: number;
+  limit: number;
+  total: number;
+};
+
 export function successResponse<T>(
   res: Response,
   message = "Operation successful",
@@ -33,6 +39,20 @@ export function createdResponse<T>(
     success: true,
     message,
     data
+  });
+}
+
+export function paginatedResponse<T>(
+  res: Response,
+  message: string,
+  data: T[],
+  meta: PaginationMeta
+): Response<{ success: true; message: string; data: T[]; meta: PaginationMeta }> {
+  return res.status(200).json({
+    success: true,
+    message,
+    data,
+    meta
   });
 }
 

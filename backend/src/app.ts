@@ -4,6 +4,15 @@ import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 
 import { authRoutes } from "./modules/auth/auth.routes";
+import { appointmentRoutes } from "./modules/appointments/routes/appointment.routes";
+import { availabilityRoutes } from "./modules/appointments/routes/availability.routes";
+import { concernRoutes } from "./modules/concerns/routes/concern.routes";
+import { departmentRoutes } from "./modules/departments/routes/department.routes";
+import { directoryRoutes } from "./modules/directory/routes/directory.routes";
+import { facultyRoutes } from "./modules/faculty/routes/faculty.routes";
+import { officeRoutes } from "./modules/offices/routes/office.routes";
+import { studentRoutes } from "./modules/students/routes/student.routes";
+import { userRoutes } from "./modules/users/routes/user.routes";
 import { globalErrorHandler } from "./shared/middleware/globalErrorHandler";
 import { notFoundHandler } from "./shared/middleware/notFoundHandler";
 import { requestLogger } from "./shared/middleware/requestLogger";
@@ -36,6 +45,24 @@ app.get("/health", (_req, res) => {
 
 app.use("/auth", authRoutes);
 app.use("/api/v1/auth", authRoutes);
+app.use("/users", userRoutes);
+app.use("/api/v1/users", userRoutes);
+app.use("/offices", officeRoutes);
+app.use("/api/v1/offices", officeRoutes);
+app.use("/departments", departmentRoutes);
+app.use("/api/v1/departments", departmentRoutes);
+app.use("/faculty", facultyRoutes);
+app.use("/api/v1/faculty", facultyRoutes);
+app.use("/students", studentRoutes);
+app.use("/api/v1/students", studentRoutes);
+app.use("/directory", directoryRoutes);
+app.use("/api/v1/directory", directoryRoutes);
+app.use("/concerns", concernRoutes);
+app.use("/api/v1/concerns", concernRoutes);
+app.use("/appointments", appointmentRoutes);
+app.use("/api/v1/appointments", appointmentRoutes);
+app.use("/availability", availabilityRoutes);
+app.use("/api/v1/availability", availabilityRoutes);
 
 app.use(notFoundHandler);
 app.use(globalErrorHandler);

@@ -1,9 +1,5 @@
 import bcrypt from "bcrypt";
-import {
-  FacultyPosition,
-  PrismaClient,
-  UserRole
-} from "@prisma/client";
+import { FacultyPosition, PrismaClient, UserRole } from "@prisma/client";
 
 const prisma = new PrismaClient();
 const PASSWORD = "password123";
@@ -27,7 +23,8 @@ type OfficeSeed = {
 const offices: OfficeSeed[] = [
   {
     name: "OSA",
-    description: "Office of Student Affairs for student services, conduct, and campus life concerns.",
+    description:
+      "Office of Student Affairs for student services, conduct, and campus life concerns.",
     email: "osa@adnu.edu.ph",
     location: "Student Affairs Office"
   },
@@ -45,13 +42,15 @@ const offices: OfficeSeed[] = [
   },
   {
     name: "MIS",
-    description: "Management Information Systems office for portal and university systems concerns.",
+    description:
+      "Management Information Systems office for portal and university systems concerns.",
     email: "mis@adnu.edu.ph",
     location: "MIS Office"
   },
   {
     name: "NOCS",
-    description: "Network Operations and Computer Services for connectivity and infrastructure concerns.",
+    description:
+      "Network Operations and Computer Services for connectivity and infrastructure concerns.",
     email: "nocs@adnu.edu.ph",
     location: "NOCS Office"
   },
@@ -69,7 +68,8 @@ const offices: OfficeSeed[] = [
   },
   {
     name: "Library",
-    description: "University library services for circulation, resources, and study-space concerns.",
+    description:
+      "University library services for circulation, resources, and study-space concerns.",
     email: "library@adnu.edu.ph",
     location: "University Library"
   }
@@ -78,7 +78,8 @@ const offices: OfficeSeed[] = [
 const departments: DepartmentSeed[] = [
   {
     name: "Computer Studies",
-    description: "Department handling computer science, information systems, and computing programs.",
+    description:
+      "Department handling computer science, information systems, and computing programs.",
     email: "computerstudies@adnu.edu.ph",
     location: "Computer Studies Department",
     code: "CS"
@@ -106,7 +107,8 @@ const departments: DepartmentSeed[] = [
   },
   {
     name: "Nursing",
-    description: "Department handling nursing programs, clinical coordination, and academic concerns.",
+    description:
+      "Department handling nursing programs, clinical coordination, and academic concerns.",
     email: "nursing@adnu.edu.ph",
     location: "Nursing Department",
     code: "NUR"
@@ -162,7 +164,10 @@ const students = [
 ];
 
 function slugify(value: string): string {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, ".").replace(/(^\.|\.$)/g, "");
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ".")
+    .replace(/(^\.|\.$)/g, "");
 }
 
 async function upsertUser(input: {
@@ -203,14 +208,6 @@ async function seedUsers(passwordHash: string): Promise<void> {
     role: UserRole.ADMIN,
     passwordHash
   });
-
-  await upsertUser({
-    email: "office.staff@adnu.edu.ph",
-    firstName: "Office",
-    lastName: "Staff",
-    role: UserRole.OFFICE_STAFF,
-    passwordHash
-  });
 }
 
 async function seedDepartments() {
@@ -236,8 +233,8 @@ async function seedDepartments() {
   return new Map(records.map((department) => [department.name, department]));
 }
 
-async function seedOffices(): Promise<void> {
-  await Promise.all(
+async function seedOffices() {
+  const records = await Promise.all(
     offices.map((office) =>
       prisma.office.upsert({
         where: { name: office.name },
@@ -250,6 +247,36 @@ async function seedOffices(): Promise<void> {
       })
     )
   );
+
+  return new Map(records.map((office) => [office.name, office]));
+}
+
+async function seedOfficeStaff(
+  officeMap: Awaited<ReturnType<typeof seedOffices>>,
+  passwordHash: string
+): Promise<void> {
+  const office = officeMap.get("MIS");
+
+  if (!office) {
+    throw new Error("MIS office not found after seed");
+  }
+
+  const user = await upsertUser({
+    email: "office.staff@adnu.edu.ph",
+    firstName: "Office",
+    lastName: "Staff",
+    role: UserRole.OFFICE_STAFF,
+    passwordHash
+  });
+
+  await prisma.officeStaffProfile.upsert({
+    where: { userId: user.id },
+    update: { officeId: office.id },
+    create: {
+      userId: user.id,
+      officeId: office.id
+    }
+  });
 }
 
 async function seedFaculty(
@@ -373,27 +400,37 @@ async function validateSeedData(): Promise<void> {
     }
   }
 
-  const [facultyCount, studentCount, officeCount, departmentCount] = await Promise.all([
-    prisma.facultyProfile.count(),
-    prisma.studentProfile.count(),
-    prisma.office.count(),
-    prisma.department.count()
-  ]);
+  const [facultyCount, studentCount, officeCount, departmentCount, officeStaffCount] =
+    await Promise.all([
+      prisma.facultyProfile.count(),
+      prisma.studentProfile.count(),
+      prisma.office.count(),
+      prisma.department.count(),
+      prisma.officeStaffProfile.count()
+    ]);
 
   if (officeCount < offices.length) {
     throw new Error(`Expected at least ${offices.length} offices, found ${officeCount}`);
   }
 
   if (departmentCount < departments.length) {
-    throw new Error(`Expected at least ${departments.length} departments, found ${departmentCount}`);
+    throw new Error(
+      `Expected at least ${departments.length} departments, found ${departmentCount}`
+    );
   }
 
   if (facultyCount < departments.length * 4) {
-    throw new Error(`Expected at least ${departments.length * 4} faculty profiles, found ${facultyCount}`);
+    throw new Error(
+      `Expected at least ${departments.length * 4} faculty profiles, found ${facultyCount}`
+    );
   }
 
   if (studentCount < students.length) {
     throw new Error(`Expected at least ${students.length} student profiles, found ${studentCount}`);
+  }
+
+  if (officeStaffCount < 1) {
+    throw new Error("Expected at least one office staff profile");
   }
 }
 
@@ -402,7 +439,8 @@ async function main(): Promise<void> {
 
   await seedUsers(passwordHash);
   const departmentMap = await seedDepartments();
-  await seedOffices();
+  const officeMap = await seedOffices();
+  await seedOfficeStaff(officeMap, passwordHash);
   await seedFaculty(departmentMap, passwordHash);
   await seedStudents(departmentMap, passwordHash);
   await validateSeedData();
