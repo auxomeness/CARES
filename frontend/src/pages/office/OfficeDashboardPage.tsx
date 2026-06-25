@@ -1,6 +1,5 @@
-import { officeWorkspaceConfig } from '../../features/office'
-import { RoleWorkspaceLayout } from '../../layouts/RoleWorkspaceLayout'
+import { StaffDashboard } from '@/features/staff'
 
 export function OfficeDashboardPage() {
-  return <RoleWorkspaceLayout config={officeWorkspaceConfig} />
+  return <StaffDashboard role="office" />
 }

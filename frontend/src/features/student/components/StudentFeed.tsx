@@ -66,10 +66,6 @@ export function StudentFeed() {
   }, [filteredConcerns, visibleCount])
 
   useEffect(() => {
-    setVisibleCount(4)
-  }, [categoryFilter, locationFilter, search, statusFilter])
-
-  useEffect(() => {
     const node = loadMoreRef.current
 
     if (!node || filteredConcerns.length === 0) {
@@ -123,7 +119,10 @@ export function StudentFeed() {
           <SearchField
             className="h-9 min-w-0"
             label="Search public concerns"
-            onChange={(event) => setSearch(event.target.value)}
+            onChange={(event) => {
+              setSearch(event.target.value)
+              setVisibleCount(4)
+            }}
             placeholder="Search"
             value={search}
           />
@@ -151,6 +150,7 @@ export function StudentFeed() {
             setStatusFilter('all')
             setCategoryFilter('all')
             setLocationFilter('all')
+            setVisibleCount(4)
           }}
           type="button"
         >
@@ -159,7 +159,10 @@ export function StudentFeed() {
 
         <select
           className="h-8 min-w-[118px] rounded-[5px] border border-[#1b3a6b] bg-white px-3 text-[11px] font-semibold text-[#1b3a6b] outline-none focus:ring-2 focus:ring-[#9fbef1]"
-          onChange={(event) => setStatusFilter(event.target.value)}
+          onChange={(event) => {
+            setStatusFilter(event.target.value)
+            setVisibleCount(4)
+          }}
           value={statusFilter}
         >
           <option value="all">Status</option>
@@ -172,7 +175,10 @@ export function StudentFeed() {
 
         <select
           className="h-8 min-w-[132px] rounded-[5px] border border-[#1b3a6b] bg-white px-3 text-[11px] font-semibold text-[#1b3a6b] outline-none focus:ring-2 focus:ring-[#9fbef1]"
-          onChange={(event) => setCategoryFilter(event.target.value)}
+          onChange={(event) => {
+            setCategoryFilter(event.target.value)
+            setVisibleCount(4)
+          }}
           value={categoryFilter}
         >
           <option value="all">Category</option>
@@ -185,7 +191,10 @@ export function StudentFeed() {
 
         <select
           className="h-8 min-w-[132px] rounded-[5px] border border-[#1b3a6b] bg-white px-3 text-[11px] font-semibold text-[#1b3a6b] outline-none focus:ring-2 focus:ring-[#9fbef1]"
-          onChange={(event) => setLocationFilter(event.target.value)}
+          onChange={(event) => {
+            setLocationFilter(event.target.value)
+            setVisibleCount(4)
+          }}
           value={locationFilter}
         >
           <option value="all">Location</option>

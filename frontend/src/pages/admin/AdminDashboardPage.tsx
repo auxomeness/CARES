@@ -1,6 +1,5 @@
-import { adminWorkspaceConfig } from '../../features/admin'
-import { RoleWorkspaceLayout } from '../../layouts/RoleWorkspaceLayout'
+import { AdminDashboard } from '@/features/admin/components/AdminDashboard'
 
 export function AdminDashboardPage() {
-  return <RoleWorkspaceLayout config={adminWorkspaceConfig} />
+  return <AdminDashboard />
 }

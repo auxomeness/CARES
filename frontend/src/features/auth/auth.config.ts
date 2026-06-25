@@ -1,4 +1,4 @@
-import type { AuthMode, AuthModeConfig } from './types'
+import type { AuthMode, AuthModeConfig, AuthRoleCredential } from './types'
 
 export const authModeList: AuthMode[] = ['login', 'register']
 
@@ -65,4 +65,45 @@ export const authModes: Record<AuthMode, AuthModeConfig> = {
   },
 }
 
-export const progressSteps = ['submitted', 'for approval', 'in progress', 'submitted']
+export const progressSteps = ['submitted', 'for approval', 'in progress', 'approved']
+
+export const authRoleCredentials: AuthRoleCredential[] = [
+  {
+    username: 'student',
+    label: 'Student',
+    route: '#student',
+    description: 'Student dashboard, feed, concerns, appointments, and directories.',
+  },
+  {
+    username: 'office',
+    label: 'Office',
+    route: '#office',
+    description: 'Assigned concerns, appointments, transfers, and reports.',
+  },
+  {
+    username: 'department',
+    label: 'Department',
+    route: '#department',
+    description: 'Academic concerns and department appointment approvals.',
+  },
+  {
+    username: 'faculty',
+    label: 'Faculty',
+    route: '#faculty',
+    description: 'Faculty schedules, appointment requests, and completion logs.',
+  },
+  {
+    username: 'admin',
+    label: 'Admin',
+    route: '#admin',
+    description: 'System analytics and CRUD management for offices, departments, and faculty.',
+  },
+]
+
+export const authBrandMessages = [
+  'Submit a concern, complaint, or suggestion and track its progress.',
+  'Concern submitted by a student.',
+  'Office acknowledged the request.',
+  'Status updated for transparency.',
+  'Resolution report prepared.',
+]

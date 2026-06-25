@@ -1,10 +1,19 @@
 export type AuthMode = 'login' | 'register'
 
+export type AuthFieldValue = string
+
 export type AuthField = {
   id: string
   label: string
   type: 'text' | 'email' | 'password'
   autoComplete: string
+}
+
+export type AuthRoleCredential = {
+  username: string
+  label: string
+  route: string
+  description: string
 }
 
 export type AuthModeConfig = {

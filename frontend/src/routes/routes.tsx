@@ -1,7 +1,28 @@
 import type { ReactElement } from 'react'
-import { AdminDashboardPage } from '../pages/admin'
+import {
+  AdminDashboardPage,
+  AdminDepartmentsPage,
+  AdminFacultyPage,
+  AdminOfficesPage,
+} from '../pages/admin'
 import { AuthPage } from '../pages/auth'
-import { OfficeDashboardPage } from '../pages/office'
+import {
+  DepartmentAppointmentsPage,
+  DepartmentConcernsPage,
+  DepartmentDashboardPage,
+  DepartmentReportsPage,
+} from '../pages/department'
+import {
+  FacultyAppointmentsPage,
+  FacultyDashboardPage,
+  FacultyReportsPage,
+} from '../pages/faculty'
+import {
+  OfficeAppointmentsPage,
+  OfficeConcernsPage,
+  OfficeDashboardPage,
+  OfficeReportsPage,
+} from '../pages/office'
 import { OfficeHeadDashboardPage } from '../pages/office_head'
 import {
   StudentAppointmentFormPage,
@@ -29,8 +50,21 @@ export type AppRouteId =
   | 'student_directories_faculty'
   | 'student_directory_detail'
   | 'office'
+  | 'office_concerns'
+  | 'office_appointments'
+  | 'office_reports'
+  | 'department'
+  | 'department_concerns'
+  | 'department_appointments'
+  | 'department_reports'
+  | 'faculty'
+  | 'faculty_appointments'
+  | 'faculty_reports'
   | 'office_head'
   | 'admin'
+  | 'admin_offices'
+  | 'admin_departments'
+  | 'admin_faculty'
 
 export type AppRoute = {
   id: AppRouteId
@@ -148,11 +182,81 @@ export const appRoutes: AppRoute[] = [
     element: <OfficeDashboardPage />,
   },
   {
+    id: 'office_concerns',
+    label: 'Office Concerns',
+    path: '/office/concerns',
+    hash: '#office-concerns',
+    element: <OfficeConcernsPage />,
+  },
+  {
+    id: 'office_appointments',
+    label: 'Office Appointments',
+    path: '/office/appointments',
+    hash: '#office-appointments',
+    element: <OfficeAppointmentsPage />,
+  },
+  {
+    id: 'office_reports',
+    label: 'Office Reports',
+    path: '/office/reports',
+    hash: '#office-reports',
+    element: <OfficeReportsPage />,
+  },
+  {
+    id: 'department',
+    label: 'Department',
+    path: '/department',
+    hash: '#department',
+    element: <DepartmentDashboardPage />,
+  },
+  {
+    id: 'department_concerns',
+    label: 'Department Concerns',
+    path: '/department/concerns',
+    hash: '#department-concerns',
+    element: <DepartmentConcernsPage />,
+  },
+  {
+    id: 'department_appointments',
+    label: 'Department Appointments',
+    path: '/department/appointments',
+    hash: '#department-appointments',
+    element: <DepartmentAppointmentsPage />,
+  },
+  {
+    id: 'department_reports',
+    label: 'Department Reports',
+    path: '/department/reports',
+    hash: '#department-reports',
+    element: <DepartmentReportsPage />,
+  },
+  {
+    id: 'faculty',
+    label: 'Faculty',
+    path: '/faculty',
+    hash: '#faculty',
+    element: <FacultyDashboardPage />,
+  },
+  {
+    id: 'faculty_appointments',
+    label: 'Faculty Appointments',
+    path: '/faculty/appointments',
+    hash: '#faculty-appointments',
+    element: <FacultyAppointmentsPage />,
+  },
+  {
+    id: 'faculty_reports',
+    label: 'Faculty Reports',
+    path: '/faculty/reports',
+    hash: '#faculty-reports',
+    element: <FacultyReportsPage />,
+  },
+  {
     id: 'office_head',
     label: 'Office Head',
     path: '/office-head',
     hash: '#office-head',
-    aliases: ['#office_head'],
+    aliases: ['#office_head', '#department-office'],
     element: <OfficeHeadDashboardPage />,
   },
   {
@@ -161,6 +265,27 @@ export const appRoutes: AppRoute[] = [
     path: '/admin',
     hash: '#admin',
     element: <AdminDashboardPage />,
+  },
+  {
+    id: 'admin_offices',
+    label: 'Admin Offices',
+    path: '/admin/offices',
+    hash: '#admin-offices',
+    element: <AdminOfficesPage />,
+  },
+  {
+    id: 'admin_departments',
+    label: 'Admin Departments',
+    path: '/admin/departments',
+    hash: '#admin-departments',
+    element: <AdminDepartmentsPage />,
+  },
+  {
+    id: 'admin_faculty',
+    label: 'Admin Faculty',
+    path: '/admin/faculty',
+    hash: '#admin-faculty',
+    element: <AdminFacultyPage />,
   },
 ]
 

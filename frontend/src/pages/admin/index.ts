@@ -1,1 +1,4 @@
 export { AdminDashboardPage } from './AdminDashboardPage'
+export { AdminDepartmentsPage } from './AdminDepartmentsPage'
+export { AdminFacultyPage } from './AdminFacultyPage'
+export { AdminOfficesPage } from './AdminOfficesPage'

@@ -33,6 +33,11 @@ input {
   font: inherit;
 }
 
+input[type='password']::-ms-reveal,
+input[type='password']::-ms-clear {
+  display: none;
+}
+
 button {
   -webkit-tap-highlight-color: transparent;
 }
@@ -50,5 +55,69 @@ a {
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes caretBlink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes progressGrow {
+  0% {
+    width: 0;
+  }
+
+  55% {
+    width: calc(100% - 11px);
+  }
+
+  100% {
+    width: calc(100% - 11px);
+  }
+}
+
+@keyframes statusPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgb(247 244 236 / 0.35);
+  }
+
+  50% {
+    transform: scale(1.25);
+    box-shadow: 0 0 0 8px rgb(247 244 236 / 0);
+  }
+}
+
+@keyframes statusSweep {
+  0% {
+    transform: translateX(-120%);
+  }
+
+  55% {
+    transform: translateX(300%);
+  }
+
+  100% {
+    transform: translateX(300%);
+  }
+}
+
+@keyframes softFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-5px);
   }
 }

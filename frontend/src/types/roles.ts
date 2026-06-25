@@ -6,7 +6,7 @@ export type BackendRole =
   | 'CHAIR'
   | 'PROFESSOR'
 
-export type AppRole = 'student' | 'office' | 'office_head' | 'admin'
+export type AppRole = 'student' | 'office' | 'department' | 'faculty' | 'office_head' | 'admin'
 
 export type RoleWorkspaceConfig = {
   role: AppRole
