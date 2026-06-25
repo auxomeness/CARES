@@ -1,0 +1,90 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: cares
+      POSTGRES_USER: cares
+      POSTGRES_PASSWORD: cares
+    ports:
+      - "5432:5432"
+    volumes:
+      - cares-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cares -d cares"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - cares-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ./backend
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://cares:cares@postgres:5432/cares
+      JWT_SECRET: change-this-production-secret-before-deployment
+      JWT_EXPIRES_IN: 1d
+      JWT_ISSUER: cares-api
+      JWT_AUDIENCE: cares-client
+      CORS_ORIGIN: http://localhost:5173
+      REDIS_URL: redis://redis:6379
+      NOTIFICATION_QUEUE_ENABLED: "true"
+      NOTIFICATION_QUEUE_REQUIRED: "true"
+      DIRECTORY_CACHE_TTL_SECONDS: 300
+      REQUEST_TIMEOUT_MS: 15000
+      METRICS_TOKEN: change-this-monitoring-token
+      SUPABASE_URL: ""
+      SUPABASE_SERVICE_ROLE_KEY: ""
+      SUPABASE_BUCKET: ""
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  notification-worker:
+    build:
+      context: ./backend
+    command: node dist/workers/notification.worker.js
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://cares:cares@postgres:5432/cares
+      JWT_SECRET: change-this-production-secret-before-deployment
+      JWT_EXPIRES_IN: 1d
+      JWT_ISSUER: cares-api
+      JWT_AUDIENCE: cares-client
+      CORS_ORIGIN: http://localhost:5173
+      REDIS_URL: redis://redis:6379
+      NOTIFICATION_QUEUE_ENABLED: "true"
+      NOTIFICATION_QUEUE_REQUIRED: "true"
+      DIRECTORY_CACHE_TTL_SECONDS: 300
+      REQUEST_TIMEOUT_MS: 15000
+      METRICS_TOKEN: change-this-monitoring-token
+      SUPABASE_URL: ""
+      SUPABASE_SERVICE_ROLE_KEY: ""
+      SUPABASE_BUCKET: ""
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  cares-postgres-data:
+  cares-redis-data:

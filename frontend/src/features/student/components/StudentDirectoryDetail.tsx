@@ -1,160 +1,49 @@
-import { ArrowLeft, CheckCircle2, Clock, FileText, Gauge, Mail, MapPin } from 'lucide-react'
+import { ArrowLeft, Mail, MapPin } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
 import { LoadingLink } from '@/components/feedback/LoadingLink'
-import { getDirectoryEntryFromHash } from '../studentDirectory.utils'
+import { directoryApi } from '@/services/caresApi'
+import type { DirectoryRecord, FacultyRecord } from '@/lib/apiTypes'
 import { StudentWorkspaceShell } from './StudentWorkspaceShell'
 
-function getActiveHash() {
-  return window.location.hash
-}
-
 export function StudentDirectoryDetail() {
-  const entry = getDirectoryEntryFromHash(getActiveHash())
-
-  if (!entry) {
-    return (
-      <StudentWorkspaceShell activeSection="offices" contentClassName="max-w-none">
-        <div className="rounded-[5px] border border-[#295498]/70 bg-white px-5 py-8 text-center shadow-[3px_3px_2.5px_1px_#1b3a6b]">
-          <h1 className="m-0 text-[26px] font-bold text-[#1b3a6b]">Directory Not Found</h1>
-          <p className="m-0 mt-3 text-[14px] text-[#434343]">
-            The selected directory record could not be found.
-          </p>
-          <LoadingLink
-            className="relative mt-5 inline-flex h-10 items-center justify-center overflow-hidden rounded-[5px] border border-[#1b3a6b] bg-[#1b3a6b] px-5 text-[13px] font-semibold !text-white no-underline [&_*]:!text-white"
-            href="#student-directories"
-          >
-            Back to Directories
-          </LoadingLink>
-        </div>
-      </StudentWorkspaceShell>
-    )
-  }
-
-  const Icon = entry.icon
+  const match = window.location.hash.match(/^#student-directory-(office|department|faculty)-(.+)$/)
+  const kind = match?.[1]
+  const id = match?.[2]
+  const record = useQuery<DirectoryRecord | FacultyRecord>({
+    queryKey: ['directory-detail', kind, id],
+    enabled: Boolean(kind && id),
+    queryFn: async () => {
+      if (kind === 'office') return directoryApi.office(id!)
+      if (kind === 'department') return directoryApi.department(id!)
+      return directoryApi.facultyMember(id!)
+    },
+  })
 
   return (
-    <StudentWorkspaceShell activeSection="offices" contentClassName="max-w-none">
-      <LoadingLink
-        className="relative inline-flex h-9 items-center justify-center gap-2 overflow-hidden rounded-[5px] border border-[#1b3a6b] bg-white px-4 text-[12px] font-semibold text-[#1b3a6b] no-underline transition duration-200 hover:bg-[#edf4ff] active:scale-[0.98]"
-        href="#student-directories"
-      >
-        <ArrowLeft aria-hidden="true" size={15} />
-        Back to Directories
-      </LoadingLink>
-
-      <section className="mt-6 rounded-[5px] border border-[#295498]/70 bg-white px-5 py-5 shadow-[3px_3px_2.5px_1px_#1b3a6b]">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
-          <span className="grid size-16 shrink-0 place-items-center rounded-[5px] bg-[#f5d788] text-[#1b3a6b]">
-            <Icon aria-hidden="true" size={32} strokeWidth={2.2} />
-          </span>
-          <div>
-            <p className="m-0 text-[11px] font-bold uppercase tracking-[0.08em] text-[#707070]">
-              {entry.kind}
-            </p>
-            <h1 className="m-0 mt-1 text-[32px] font-bold leading-tight text-[#1b3a6b]">
-              {entry.name}
-            </h1>
-            <p className="m-0 mt-3 max-w-[660px] text-[15px] font-light leading-snug text-[#434343]">
-              {entry.description}
-            </p>
-          </div>
-        </div>
-
-        <div className="mt-6 grid gap-3 sm:grid-cols-3">
-          {[
-            {
-              label: 'Total Concerns',
-              value: entry.concernsHandled,
-              icon: FileText,
-            },
-            {
-              label: 'Concerns Resolved',
-              value: entry.concernsResolved,
-              icon: CheckCircle2,
-            },
-            {
-              label: 'Responsiveness',
-              value: `${entry.responsiveness}%`,
-              icon: Gauge,
-            },
-          ].map((stat) => {
-            const StatIcon = stat.icon
-
-            return (
-              <div className="rounded-[5px] bg-[#edf4ff] px-4 py-4" key={stat.label}>
-                <StatIcon aria-hidden="true" className="text-[#1b3a6b]" size={18} />
-                <p className="m-0 mt-2 text-[26px] font-bold leading-none text-[#1b3a6b]">
-                  {stat.value}
-                </p>
-                <p className="m-0 mt-2 text-[11px] font-medium text-[#707070]">
-                  {stat.label}
-                </p>
-              </div>
-            )
-          })}
-        </div>
-      </section>
-
-      <div className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_390px] xl:items-start">
-        <section className="rounded-[5px] border border-[#295498]/70 bg-white px-5 py-5 shadow-[3px_3px_2.5px_1px_#1b3a6b]">
-          <h2 className="m-0 text-[20px] font-semibold text-[#1b3a6b]">Main Concerns</h2>
-          <div className="mt-4 grid gap-3">
-            {entry.mainConcerns.map((concern) => (
-              <div
-                className="rounded-[5px] border border-[#7fa8de] bg-[#edf4ff] px-4 py-3 text-[13px] font-semibold text-[#1b3a6b]"
-                key={concern}
-              >
-                {concern}
-              </div>
-            ))}
-          </div>
+    <StudentWorkspaceShell activeSection="offices" contentClassName="max-w-[820px]">
+      <LoadingLink className="inline-flex h-9 items-center gap-2 rounded border px-4 text-sm text-[#1b3a6b] no-underline" href="#student-directories"><ArrowLeft size={15} /> Back</LoadingLink>
+      {record.isLoading ? <p className="mt-8">Loading directory record...</p> : null}
+      {record.isError || !match ? <p className="mt-8 rounded border bg-white p-6">Directory record not found.</p> : null}
+      {record.data ? (
+        <section className="mt-6 rounded border bg-white p-6 shadow-[3px_3px_2.5px_1px_#1b3a6b]">
+          {'position' in record.data ? (
+            <>
+              <p className="text-xs font-semibold uppercase text-[#707070]">{record.data.position}</p>
+              <h1 className="mt-2 text-3xl font-bold text-[#1b3a6b]">{record.data.user?.firstName} {record.data.user?.lastName}</h1>
+              <p className="mt-3">{typeof record.data.department === 'string' ? record.data.department : record.data.department.name}</p>
+              <p className="mt-4 inline-flex items-center gap-2 text-sm"><Mail size={15} /> {record.data.user?.email}</p>
+            </>
+          ) : (
+            <>
+              <h1 className="text-3xl font-bold text-[#1b3a6b]">{record.data.name}</h1>
+              <p className="mt-3 text-sm">{record.data.description || 'No description provided.'}</p>
+              {record.data.email ? <p className="mt-5 inline-flex items-center gap-2 text-sm"><Mail size={15} /> {record.data.email}</p> : null}
+              {record.data.location ? <p className="mt-3 inline-flex items-center gap-2 text-sm"><MapPin size={15} /> {record.data.location}</p> : null}
+            </>
+          )}
+          <LoadingLink className="mt-6 inline-flex h-10 items-center rounded bg-[#1b3a6b] px-5 text-sm font-semibold text-white no-underline" href="#student-concern-new">Submit concern</LoadingLink>
         </section>
-
-        <aside className="rounded-[5px] border border-[#295498]/70 bg-white px-5 py-5 shadow-[3px_3px_2.5px_1px_#1b3a6b]">
-          <h2 className="m-0 text-[20px] font-semibold text-[#1b3a6b]">Contact Info</h2>
-          <dl className="mt-5 grid gap-4 text-[13px]">
-            <div className="grid gap-1">
-              <dt className="inline-flex items-center gap-2 font-semibold text-[#1b3a6b]">
-                <Mail aria-hidden="true" size={15} />
-                Email
-              </dt>
-              <dd className="m-0 text-[#434343]">{entry.contact}</dd>
-            </div>
-            <div className="grid gap-1">
-              <dt className="inline-flex items-center gap-2 font-semibold text-[#1b3a6b]">
-                <MapPin aria-hidden="true" size={15} />
-                Location
-              </dt>
-              <dd className="m-0 text-[#434343]">{entry.location}</dd>
-            </div>
-            <div className="grid gap-1">
-              <dt className="inline-flex items-center gap-2 font-semibold text-[#1b3a6b]">
-                <Clock aria-hidden="true" size={15} />
-                Hours
-              </dt>
-              <dd className="m-0 text-[#434343]">{entry.hours}</dd>
-            </div>
-            {entry.relatedOffice ? (
-              <div className="grid gap-1">
-                <dt className="font-semibold text-[#1b3a6b]">Related Office</dt>
-                <dd className="m-0 text-[#434343]">{entry.relatedOffice}</dd>
-              </div>
-            ) : null}
-            {entry.facultyLead ? (
-              <div className="grid gap-1">
-                <dt className="font-semibold text-[#1b3a6b]">Faculty Lead</dt>
-                <dd className="m-0 text-[#434343]">{entry.facultyLead}</dd>
-              </div>
-            ) : null}
-          </dl>
-
-          <LoadingLink
-            className="relative mt-6 inline-flex h-10 w-full items-center justify-center overflow-hidden rounded-[5px] border border-[#1b3a6b] bg-[#1b3a6b] px-5 text-[13px] font-semibold !text-white no-underline transition duration-200 hover:bg-[#295498] active:scale-[0.98] [&_*]:!text-white"
-            href="#student-concern-new"
-          >
-            Add Concern
-          </LoadingLink>
-        </aside>
-      </div>
+      ) : null}
     </StudentWorkspaceShell>
   )
 }

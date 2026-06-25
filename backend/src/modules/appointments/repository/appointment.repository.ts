@@ -157,6 +157,7 @@ export const appointmentRepository = {
       where: { id },
       select: {
         id: true,
+        title: true,
         studentId: true,
         targetType: true,
         officeId: true,

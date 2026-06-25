@@ -6,7 +6,7 @@ The system centralizes communication between students, university offices, acade
 
 ## Version
 
-0.6.0
+1.0.0
 
 ## Author
 
@@ -26,7 +26,10 @@ CARES/
 └── README.md
 ```
 
-The backend is currently implemented. The frontend folder is intentionally empty for now and is reserved for the future CARES client application.
+The repository contains the CARES backend and React frontend applications.
+
+For the complete native PostgreSQL and application startup sequence, see
+[RUN-LOCAL.md](./RUN-LOCAL.md).
 
 ## Backend Tech Stack
 
@@ -40,6 +43,7 @@ The backend is currently implemented. The frontend folder is intentionally empty
 - Zod validation
 - Pino logging
 - Helmet, CORS, and Express Rate Limit
+- Redis, BullMQ, response compression, and Prometheus metrics
 
 ## Current Backend Scope
 
@@ -70,10 +74,18 @@ The backend currently includes:
 - Appointment approval, rejection, cancellation, and completion
 - Appointment rescheduling with history
 - Service and database-level overlap prevention
+- Event-driven concern and appointment notifications
+- Paginated notification history with read/unread filters
+- Notification read, unread, read-all, and deletion controls
+- Failure-isolated notification delivery
+- Redis-backed notification queue and independent worker process
+- Redis directory caching with mutation invalidation
+- Request timeout handling and protected operational metrics
 
-The following modules remain reserved for future implementation:
+All planned backend feature modules are now implemented.
 
-- Notifications
+The backend includes automated unit and integration tests, Docker deployment
+support, PostgreSQL integrity checks, and GitHub Actions CI.
 
 ## Roles
 
@@ -114,6 +126,13 @@ NODE_ENV=
 DATABASE_URL=
 JWT_SECRET=
 JWT_EXPIRES_IN=
+CORS_ORIGIN=
+REDIS_URL=
+NOTIFICATION_QUEUE_ENABLED=
+NOTIFICATION_QUEUE_REQUIRED=
+DIRECTORY_CACHE_TTL_SECONDS=
+REQUEST_TIMEOUT_MS=
+METRICS_TOKEN=
 SUPABASE_URL=
 SUPABASE_SERVICE_ROLE_KEY=
 SUPABASE_BUCKET=
@@ -129,6 +148,9 @@ Seed development data:
 
 ```bash
 npm run prisma:seed
+npm run prisma:check
+npm test
+npm run test:coverage
 ```
 
 Start the backend development server:
@@ -143,8 +165,10 @@ Run these from `backend/`:
 
 ```bash
 npm run dev
+npm run dev:worker
 npm run build
 npm run start
+npm run start:worker
 npm run lint
 npm run format
 npm run prisma:generate
@@ -269,6 +293,30 @@ use ISO weekdays where Monday is `1` and Sunday is `7`.
 
 Complete appointment examples are available in
 [`backend/docs/appointments-api.md`](backend/docs/appointments-api.md).
+
+## Notification Endpoints
+
+```text
+GET    /api/v1/notifications
+PATCH  /api/v1/notifications/read-all
+PATCH  /api/v1/notifications/:id/read
+PATCH  /api/v1/notifications/:id/unread
+DELETE /api/v1/notifications/:id
+```
+
+Concern and appointment services publish typed notification events only after
+their primary database operations succeed. With Redis enabled, notification
+delivery runs through BullMQ and the independent worker. Failures are logged
+without failing the originating workflow.
+
+Complete notification examples are available in
+[`backend/docs/notifications-api.md`](backend/docs/notifications-api.md).
+
+The production runtime topology and scaling guidance are documented in
+[`backend/docs/scalable-architecture.md`](backend/docs/scalable-architecture.md).
+
+The full backend/frontend route audit and API mapping are documented in
+[`docs/integration-audit.md`](docs/integration-audit.md).
 
 ## License
 

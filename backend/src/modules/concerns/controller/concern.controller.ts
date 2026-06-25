@@ -29,6 +29,18 @@ export const concernController = {
     return paginatedResponse(res, "Concerns retrieved successfully", result.data, result.meta);
   },
 
+  async getPublicConcerns(req: Request, res: Response): Promise<Response> {
+    const result = await concernService.getPublicConcerns(
+      req.query as unknown as ConcernListQuery
+    );
+    return paginatedResponse(
+      res,
+      "Public concerns retrieved successfully",
+      result.data,
+      result.meta
+    );
+  },
+
   async getConcernById(req: Request, res: Response): Promise<Response> {
     const actor = requireActor(req);
     const concern = await concernService.getConcernById(req.params.id, actor);

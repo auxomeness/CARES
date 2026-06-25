@@ -11,6 +11,7 @@ export type ConcernCategory =
 
 export type StudentConcern = {
   id: string
+  apiId?: string
   title: string
   description: string
   category: ConcernCategory
@@ -22,15 +23,18 @@ export type StudentConcern = {
   createdAt: string
   reactions: number
   progress: number
+  backendStatus?: string
+  detail?: import('@/lib/apiTypes').ConcernRecord
 }
 
 export type ConcernInput = {
   title: string
   description: string
-  category: ConcernCategory
-  location: string
   visibility: ConcernVisibility
-  anonymous: boolean
+  targetType: 'OFFICE' | 'DEPARTMENT'
+  targetOfficeId?: string | null
+  targetDepartmentId?: string | null
+  image?: File | null
 }
 
 export type AppointmentMode = 'office' | 'department'
@@ -50,6 +54,8 @@ export type StudentAppointment = {
   description: string
   status: AppointmentStatus
   createdAt: string
+  backendStatus?: string
+  detail?: import('@/lib/apiTypes').AppointmentRecord
 }
 
 export type AppointmentInput = {
@@ -62,4 +68,10 @@ export type AppointmentInput = {
   purpose: string
   consultationCategory: string
   description: string
+  targetType?: 'OFFICE' | 'DEPARTMENT' | 'PROFESSOR'
+  officeId?: string | null
+  departmentId?: string | null
+  facultyId?: string | null
+  startTime?: string
+  endTime?: string
 }

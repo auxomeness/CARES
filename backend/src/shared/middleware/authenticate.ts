@@ -1,9 +1,14 @@
 import { NextFunction, Request, Response } from "express";
 
 import { UnauthorizedError } from "../errors";
+import { authRepository } from "../../modules/auth/auth.repository";
 import { verifyToken } from "../../modules/auth/auth.utils";
 
-export function authenticate(req: Request, _res: Response, next: NextFunction): void {
+export async function authenticate(
+  req: Request,
+  _res: Response,
+  next: NextFunction
+): Promise<void> {
   const authorizationHeader = req.headers.authorization;
 
   if (!authorizationHeader?.startsWith("Bearer ")) {
@@ -15,10 +20,16 @@ export function authenticate(req: Request, _res: Response, next: NextFunction): 
 
   try {
     const decoded = verifyToken(token);
+    const user = await authRepository.findSafeUserById(decoded.userId);
+
+    if (!user || !user.isActive || user.role !== decoded.role) {
+      next(new UnauthorizedError("Authentication session is no longer valid"));
+      return;
+    }
+
     req.user = {
-      id: decoded.userId,
-      email: decoded.email,
-      role: decoded.role
+      id: user.id,
+      role: user.role
     };
     next();
   } catch {

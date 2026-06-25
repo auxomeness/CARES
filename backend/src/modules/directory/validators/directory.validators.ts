@@ -1,5 +1,3 @@
-import { z } from "zod";
+import { paginationQuerySchema } from "../../../shared/validators/pagination.validators";
 
-export const directorySearchQuerySchema = z.object({
-  search: z.string().trim().min(1).optional()
-});
+export const directorySearchQuerySchema = paginationQuerySchema;

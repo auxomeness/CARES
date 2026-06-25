@@ -4,6 +4,7 @@ import { Router } from "express";
 import { authenticate } from "../../../shared/middleware/authenticate";
 import { authorize } from "../../../shared/middleware/authorize";
 import { validateRequest } from "../../../shared/middleware/validateRequest";
+import { submissionRateLimiter } from "../../../shared/middleware/submissionRateLimiter";
 import { asyncHandler } from "../../../shared/utils/asyncHandler";
 import { appointmentController } from "../controller/appointment.controller";
 import {
@@ -43,6 +44,7 @@ appointmentRoutes.get(
 appointmentRoutes.post(
   "/",
   authorize([UserRole.STUDENT]),
+  submissionRateLimiter,
   validateRequest({ body: createAppointmentSchema }),
   asyncHandler(appointmentController.createAppointment)
 );

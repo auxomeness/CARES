@@ -8,6 +8,9 @@ import {
 } from "../../../shared/errors";
 import { AuthenticatedUser } from "../../../shared/types/auth.types";
 import { getPagination } from "../../../shared/utils/pagination";
+import { logger } from "../../../shared/utils/logger";
+import { publishNotificationEvent } from "../../notifications/service/notification.events";
+import { NotificationEventType } from "../../notifications/types/notification.types";
 import { availabilityService } from "../availability/availability.service";
 import { appointmentRepository } from "../repository/appointment.repository";
 import {
@@ -51,6 +54,7 @@ export const appointmentService = {
     try {
       const appointment = await appointmentRepository.create(input, student.id);
       if (!appointment) throw new ConflictError("Time slot not available");
+      publishAppointmentEvent(NotificationEventType.APPOINTMENT_CREATED, appointment, actor.id);
       return appointment;
     } catch (error) {
       throw normalizeConflictError(error);
@@ -92,9 +96,12 @@ export const appointmentService = {
       throw new ConflictError(`Appointment cannot be approved from ${access.status}`);
     }
 
-    return appointmentRepository.updateStatus(id, AppointmentStatus.APPROVED, {
+    const appointment = await appointmentRepository.updateStatus(id, AppointmentStatus.APPROVED, {
       rejectionReason: null
     });
+    publishAppointmentEvent(NotificationEventType.APPOINTMENT_APPROVED, appointment, actor.id);
+    logAppointmentAction("appointment_approved", appointment.id, actor.id);
+    return appointment;
   },
 
   async rejectAppointment(id: string, input: RejectAppointmentInput, actor: AuthenticatedUser) {
@@ -104,9 +111,17 @@ export const appointmentService = {
       throw new ConflictError(`Appointment cannot be rejected from ${access.status}`);
     }
 
-    return appointmentRepository.updateStatus(id, AppointmentStatus.REJECTED, {
+    const appointment = await appointmentRepository.updateStatus(id, AppointmentStatus.REJECTED, {
       rejectionReason: input.reason
     });
+    publishAppointmentEvent(
+      NotificationEventType.APPOINTMENT_REJECTED,
+      appointment,
+      actor.id,
+      input.reason
+    );
+    logAppointmentAction("appointment_rejected", appointment.id, actor.id);
+    return appointment;
   },
 
   async cancelAppointment(id: string, actor: AuthenticatedUser) {
@@ -118,9 +133,12 @@ export const appointmentService = {
       throw new ConflictError(`Appointment cannot be cancelled from ${access.status}`);
     }
 
-    return appointmentRepository.updateStatus(id, AppointmentStatus.CANCELLED, {
+    const appointment = await appointmentRepository.updateStatus(id, AppointmentStatus.CANCELLED, {
       cancelledAt: new Date()
     });
+    publishAppointmentEvent(NotificationEventType.APPOINTMENT_CANCELLED, appointment, actor.id);
+    logAppointmentAction("appointment_cancelled", appointment.id, actor.id);
+    return appointment;
   },
 
   async rescheduleAppointment(
@@ -149,6 +167,13 @@ export const appointmentService = {
         target
       );
       if (!appointment) throw new ConflictError("Time slot not available");
+      publishAppointmentEvent(
+        NotificationEventType.APPOINTMENT_RESCHEDULED,
+        appointment,
+        actor.id,
+        input.reason
+      );
+      logAppointmentAction("appointment_rescheduled", appointment.id, actor.id);
       return appointment;
     } catch (error) {
       throw normalizeConflictError(error);
@@ -162,9 +187,12 @@ export const appointmentService = {
       throw new ConflictError("Only approved appointments can be completed");
     }
 
-    return appointmentRepository.updateStatus(id, AppointmentStatus.COMPLETED, {
+    const appointment = await appointmentRepository.updateStatus(id, AppointmentStatus.COMPLETED, {
       completedAt: new Date()
     });
+    publishAppointmentEvent(NotificationEventType.APPOINTMENT_COMPLETED, appointment, actor.id);
+    logAppointmentAction("appointment_completed", appointment.id, actor.id);
+    return appointment;
   },
 
   async detectConflicts(input: CreateAppointmentInput, actor: AuthenticatedUser): Promise<boolean> {
@@ -362,4 +390,30 @@ function normalizeConflictError(error: unknown): Error {
     return new ConflictError("Time slot not available");
   }
   return error instanceof Error ? error : new Error("Appointment operation failed");
+}
+
+function publishAppointmentEvent(
+  type: NotificationEventType,
+  appointment: Awaited<ReturnType<typeof appointmentRepository.updateStatus>>,
+  actorUserId: string,
+  reason?: string
+): void {
+  publishNotificationEvent({
+    type,
+    resourceId: appointment.id,
+    resourceTitle: appointment.title,
+    studentUserId: appointment.student.user.id,
+    actorUserId,
+    targetType: appointment.targetType,
+    officeId: appointment.officeId,
+    departmentId: appointment.departmentId,
+    facultyId: appointment.facultyId,
+    reason,
+    startTime: appointment.startTime,
+    endTime: appointment.endTime
+  });
+}
+
+function logAppointmentAction(action: string, appointmentId: string, actorUserId: string): void {
+  logger.info({ action, appointmentId, actorUserId }, "Appointment state changed");
 }

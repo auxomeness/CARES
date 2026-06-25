@@ -1,217 +1,271 @@
-import { Edit3, Trash2 } from 'lucide-react'
-import { type FormEvent, useMemo, useState } from 'react'
-import type { AdminDirectoryItem, AdminSection } from '../adminData'
-import { adminCreateIcon } from '../adminData'
+import { Pencil, Plus, Save, Trash2 } from 'lucide-react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { type FormEvent, useState } from 'react'
+import { getApiErrorMessage } from '@/lib/api'
+import type { DirectoryRecord, FacultyRecord, PaginatedEnvelope, StudentRecord } from '@/lib/apiTypes'
+import { adminApi, directoryApi } from '@/services/caresApi'
+import type { AdminSection } from '../adminData'
 import { AdminShell } from './AdminShell'
 
-type AdminDirectoryPageProps = {
+type Props = {
   createLabel: string
   description: string
-  initialItems: AdminDirectoryItem[]
   section: Exclude<AdminSection, 'dashboard'>
   title: string
 }
 
-export function AdminDirectoryPage({
-  createLabel,
-  description,
-  initialItems,
-  section,
-  title,
-}: AdminDirectoryPageProps) {
-  const [items, setItems] = useState(initialItems)
-  const [selectedId, setSelectedId] = useState(initialItems[0]?.id ?? '')
-  const [name, setName] = useState('')
-  const [lead, setLead] = useState('')
-  const [email, setEmail] = useState('')
-  const selectedItem = useMemo(
-    () => items.find((item) => item.id === selectedId) ?? items[0] ?? null,
-    [items, selectedId],
-  )
-  const CreateIcon = adminCreateIcon
+export function AdminDirectoryPage({ createLabel, description, section, title }: Props) {
+  const queryClient = useQueryClient()
+  const departments = useQuery({
+    queryKey: ['departments'],
+    queryFn: () => directoryApi.departments({ page: 1, limit: 100 }),
+  })
+  const records = useQuery<PaginatedEnvelope<DirectoryRecord | FacultyRecord | StudentRecord>>({
+    queryKey: ['admin-directory', section],
+    queryFn: async () => {
+      if (section === 'offices') return directoryApi.offices({ page: 1, limit: 100 })
+      if (section === 'departments') return directoryApi.departments({ page: 1, limit: 100 })
+      if (section === 'faculty') return directoryApi.faculty({ page: 1, limit: 100 })
+      return directoryApi.students({ page: 1, limit: 100 })
+    },
+  })
+  const [selectedId, setSelectedId] = useState('')
+  const [form, setForm] = useState<Record<string, string>>({
+    name: '',
+    email: '',
+    location: '',
+    description: '',
+    firstName: '',
+    lastName: '',
+    employeeId: '',
+    studentId: '',
+    course: '',
+    yearLevel: '1',
+    position: 'PROFESSOR',
+    departmentId: '',
+    password: '',
+  })
+  const [error, setError] = useState('')
+  const [edit, setEdit] = useState<Record<string, string> | null>(null)
+  const selected = records.data?.data.find((item) => item?.id === selectedId) ?? records.data?.data[0]
 
-  const handleCreate = (event: FormEvent<HTMLFormElement>) => {
+  const refresh = () => queryClient.invalidateQueries({ queryKey: ['admin-directory', section] })
+  const set = (key: string, value: string) => setForm((current) => ({ ...current, [key]: value }))
+
+  const create = async (event: FormEvent) => {
     event.preventDefault()
-
-    if (!name.trim() || !lead.trim() || !email.trim()) {
-      return
+    setError('')
+    try {
+      if (section === 'offices') {
+        await adminApi.createOffice({
+          name: form.name,
+          email: form.email,
+          location: form.location,
+          description: form.description,
+        })
+      } else if (section === 'departments') {
+        await adminApi.createDepartment({
+          name: form.name,
+          email: form.email,
+          location: form.location,
+          description: form.description,
+        })
+      } else if (section === 'faculty') {
+        await adminApi.createFaculty({
+          email: form.email,
+          password: form.password,
+          firstName: form.firstName,
+          lastName: form.lastName,
+          employeeId: form.employeeId,
+          position: form.position,
+          departmentId: form.departmentId || departments.data?.data[0]?.id,
+        })
+      } else {
+        await adminApi.createStudent({
+          email: form.email,
+          password: form.password,
+          firstName: form.firstName,
+          lastName: form.lastName,
+          studentId: form.studentId,
+          course: form.course,
+          yearLevel: Number(form.yearLevel),
+          departmentId: form.departmentId || departments.data?.data[0]?.id,
+        })
+      }
+      setForm((current) => Object.fromEntries(Object.keys(current).map((key) => [key, key === 'position' ? 'PROFESSOR' : ''])))
+      await refresh()
+    } catch (failure) {
+      setError(getApiErrorMessage(failure))
     }
-
-    const nextItem: AdminDirectoryItem = {
-      id: `${section.slice(0, 3).toUpperCase()}-${String(items.length + 1).padStart(3, '0')}`,
-      name,
-      lead,
-      email,
-      status: 'Needs Setup',
-      members: 1,
-      category: section === 'faculty' ? 'Faculty' : section === 'offices' ? 'Office' : 'Academic',
-    }
-
-    setItems((currentItems) => [nextItem, ...currentItems])
-    setSelectedId(nextItem.id)
-    setName('')
-    setLead('')
-    setEmail('')
   }
 
-  const deleteSelected = () => {
-    if (!selectedItem) {
+  const remove = async () => {
+    if (!selected) return
+    setError('')
+    try {
+      if (section === 'offices') await adminApi.deleteOffice(selected.id)
+      else if (section === 'departments') await adminApi.deleteDepartment(selected.id)
+      else if (section === 'faculty') await adminApi.deleteFaculty(selected.id)
+      else await adminApi.deleteStudent(selected.id)
+      setSelectedId('')
+      await refresh()
+    } catch (failure) {
+      setError(getApiErrorMessage(failure))
+    }
+  }
+
+  const beginEdit = () => {
+    if (!selected) return
+    if ('position' in selected) {
+      setEdit({
+        email: selected.user?.email ?? '',
+        firstName: selected.user?.firstName ?? '',
+        lastName: selected.user?.lastName ?? '',
+        employeeId: selected.employeeId ?? '',
+        position: selected.position,
+        departmentId:
+          selected.departmentId ??
+          (typeof selected.department === 'string' ? '' : selected.department.id),
+      })
       return
     }
+    if ('studentId' in selected) {
+      setEdit({
+        email: selected.user.email,
+        firstName: selected.user.firstName,
+        lastName: selected.user.lastName,
+        studentId: selected.studentId,
+        course: selected.course,
+        yearLevel: String(selected.yearLevel),
+        departmentId: selected.departmentId ?? selected.department.id,
+      })
+      return
+    }
+    setEdit({
+      name: selected.name,
+      email: selected.email ?? '',
+      location: selected.location ?? '',
+      description: selected.description ?? '',
+    })
+  }
 
-    const remainingItems = items.filter((item) => item.id !== selectedItem.id)
-    setItems(remainingItems)
-    setSelectedId(remainingItems[0]?.id ?? '')
+  const update = async (event: FormEvent) => {
+    event.preventDefault()
+    if (!selected || !edit) return
+    setError('')
+    try {
+      if (section === 'offices') await adminApi.updateOffice(selected.id, edit)
+      else if (section === 'departments') await adminApi.updateDepartment(selected.id, edit)
+      else if (section === 'faculty') await adminApi.updateFaculty(selected.id, edit)
+      else await adminApi.updateStudent(selected.id, { ...edit, yearLevel: Number(edit.yearLevel) })
+      setEdit(null)
+      await refresh()
+    } catch (failure) {
+      setError(getApiErrorMessage(failure))
+    }
   }
 
   return (
     <AdminShell activeSection={section}>
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_400px] xl:items-start">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_400px]">
         <section>
-          <div>
-            <p className="m-0 text-[12px] font-bold uppercase tracking-[0.08em] text-[#1b3a6b]">
-              Admin Directory
-            </p>
-            <h1 className="m-0 mt-1 text-[38px] font-bold leading-tight text-[#1b3a6b]">
-              {title}
-            </h1>
-            <p className="m-0 mt-2 max-w-[760px] text-[16px] font-light leading-snug text-[#434343]">
-              {description}
-            </p>
-          </div>
-
-          <section
-            className="mt-8 grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(260px,1fr))]"
-            aria-label={`${title} records`}
-          >
-            {items.map((item) => {
-              const isSelected = item.id === selectedItem?.id
-
+          <h1 className="text-4xl font-bold text-[#1b3a6b]">{title}</h1>
+          <p className="mt-2 text-[#434343]">{description}</p>
+          {records.isLoading ? <p className="mt-8 text-sm">Loading records...</p> : null}
+          <div className="mt-8 grid gap-4 sm:grid-cols-2">
+            {records.data?.data.map((item) => {
+              const faculty = 'position' in item
+              const student = 'studentId' in item
+              const name = faculty || student ? `${item.user?.firstName ?? ''} ${item.user?.lastName ?? ''}` : item.name
+              const detail = faculty
+                ? `${item.position} · ${typeof item.department === 'string' ? item.department : item.department.name}`
+                : student
+                  ? `${item.studentId} · ${item.course} · Year ${item.yearLevel}`
+                : item.email || item.location
               return (
-                <button
-                  className={`rounded-[6px] border px-4 py-4 text-left shadow-[3px_3px_2.5px_1px_#1b3a6b] transition duration-200 hover:-translate-y-0.5 active:scale-[0.995] ${
-                    isSelected
-                      ? 'border-[#1b3a6b] bg-[#c1d9ff]'
-                      : 'border-[#295498]/70 bg-white hover:bg-[#f8fbff]'
-                  }`}
-                  key={item.id}
-                  onClick={() => setSelectedId(item.id)}
-                  type="button"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="m-0 text-[11px] font-semibold text-[#1b3a6b]">{item.id}</p>
-                      <h2 className="m-0 mt-2 text-[20px] font-semibold leading-tight">
-                        {item.name}
-                      </h2>
-                    </div>
-                    <span className="rounded-full bg-[#edf4ff] px-3 py-1 text-[10px] font-semibold text-[#1b3a6b]">
-                      {item.status}
-                    </span>
-                  </div>
-                  <p className="m-0 mt-3 text-[12px] leading-snug text-[#434343]">
-                    Lead: {item.lead}
-                  </p>
-                  <p className="m-0 mt-1 text-[12px] leading-snug text-[#434343]">
-                    {item.email}
-                  </p>
-                  <div className="mt-4 flex flex-wrap gap-2 text-[11px] font-semibold text-[#1b3a6b]">
-                    <span className="rounded-full bg-[#edf4ff] px-3 py-1">
-                      {item.members} members
-                    </span>
-                    <span className="rounded-full bg-[#edf4ff] px-3 py-1">{item.category}</span>
-                  </div>
+                <button className={`rounded border p-4 text-left shadow-[3px_3px_2.5px_1px_#1b3a6b] ${selected?.id === item.id ? 'bg-[#c1d9ff]' : 'bg-white'}`} key={item.id} onClick={() => setSelectedId(item.id)} type="button">
+                  <p className="text-xs font-semibold text-[#1b3a6b]">{item.id}</p>
+                  <h2 className="mt-2 text-xl font-semibold">{name}</h2>
+                  <p className="mt-2 text-sm">{detail}</p>
                 </button>
               )
             })}
-          </section>
+          </div>
         </section>
-
-        <aside className="grid gap-5 xl:sticky xl:top-8">
-          <section className="rounded-[6px] border border-[#1b3a6b] bg-white px-5 py-5 shadow-[3px_3px_2.5px_1px_#1b3a6b]">
-            <h2 className="m-0 text-[22px] font-semibold text-[#1b3a6b]">{createLabel}</h2>
-            <form className="mt-5 grid gap-4" onSubmit={handleCreate}>
-              <label className="grid gap-2 text-[12px] font-semibold text-[#1b3a6b]">
-                Name
-                <input
-                  className="h-10 rounded-[5px] border border-[#7fa8de] bg-white px-3 text-[13px] outline-none focus:ring-2 focus:ring-[#9fbef1]"
-                  onChange={(event) => setName(event.target.value)}
-                  value={name}
-                />
-              </label>
-              <label className="grid gap-2 text-[12px] font-semibold text-[#1b3a6b]">
-                Lead or Role
-                <input
-                  className="h-10 rounded-[5px] border border-[#7fa8de] bg-white px-3 text-[13px] outline-none focus:ring-2 focus:ring-[#9fbef1]"
-                  onChange={(event) => setLead(event.target.value)}
-                  value={lead}
-                />
-              </label>
-              <label className="grid gap-2 text-[12px] font-semibold text-[#1b3a6b]">
-                Email
-                <input
-                  className="h-10 rounded-[5px] border border-[#7fa8de] bg-white px-3 text-[13px] outline-none focus:ring-2 focus:ring-[#9fbef1]"
-                  onChange={(event) => setEmail(event.target.value)}
-                  type="email"
-                  value={email}
-                />
-              </label>
-
-              <button
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-[5px] border border-[#1b3a6b] bg-[#1b3a6b] text-[13px] font-semibold !text-white transition duration-200 hover:bg-[#295498] active:scale-[0.98]"
-                type="submit"
-              >
-                <CreateIcon aria-hidden="true" size={15} />
-                Create Record
-              </button>
-            </form>
-          </section>
-
-          <section className="rounded-[6px] border border-[#1b3a6b] bg-white px-5 py-5 shadow-[3px_3px_2.5px_1px_#1b3a6b]">
-            <h2 className="m-0 text-[22px] font-semibold text-[#1b3a6b]">Selected Record</h2>
-            {selectedItem ? (
+        <aside className="grid h-fit gap-5">
+          <form className="grid gap-3 rounded border border-[#1b3a6b] bg-white p-5 shadow-[3px_3px_2.5px_1px_#1b3a6b]" onSubmit={create}>
+            <h2 className="text-xl font-semibold text-[#1b3a6b]">{createLabel}</h2>
+            {section === 'faculty' || section === 'students' ? (
               <>
-                <p className="m-0 mt-4 text-[11px] font-semibold text-[#1b3a6b]">
-                  {selectedItem.id}
-                </p>
-                <h3 className="m-0 mt-1 text-[20px] font-semibold leading-tight">
-                  {selectedItem.name}
-                </h3>
-                <dl className="mt-4 grid gap-3 text-[13px]">
-                  {[
-                    ['Lead', selectedItem.lead],
-                    ['Email', selectedItem.email],
-                    ['Status', selectedItem.status],
-                    ['Members', selectedItem.members],
-                  ].map(([label, value]) => (
-                    <div className="grid gap-1" key={label}>
-                      <dt className="font-semibold text-[#1b3a6b]">{label}</dt>
-                      <dd className="m-0 text-[#434343]">{value}</dd>
-                    </div>
-                  ))}
-                </dl>
-
-                <div className="mt-5 grid gap-3">
-                  <button
-                    className="inline-flex h-10 items-center justify-center gap-2 rounded-[5px] border border-[#1b3a6b] bg-[#1b3a6b] text-[13px] font-semibold !text-white transition duration-200 hover:bg-[#295498] active:scale-[0.98]"
-                    type="button"
-                  >
-                    <Edit3 aria-hidden="true" size={15} />
-                    Edit Record
-                  </button>
-                  <button
-                    className="inline-flex h-10 items-center justify-center gap-2 rounded-[5px] border border-[#8a1f1f] bg-white text-[13px] font-semibold text-[#8a1f1f] transition duration-200 hover:bg-[#f0d7d7] active:scale-[0.98]"
-                    onClick={deleteSelected}
-                    type="button"
-                  >
-                    <Trash2 aria-hidden="true" size={15} />
-                    Delete Record
-                  </button>
-                </div>
+                <input className="h-10 rounded border px-3 text-sm" onChange={(e) => set('firstName', e.target.value)} placeholder="First name" required value={form.firstName} />
+                <input className="h-10 rounded border px-3 text-sm" onChange={(e) => set('lastName', e.target.value)} placeholder="Last name" required value={form.lastName} />
+                {section === 'faculty' ? (
+                  <>
+                    <input className="h-10 rounded border px-3 text-sm" onChange={(e) => set('employeeId', e.target.value)} placeholder="Employee ID" required value={form.employeeId} />
+                    <select className="h-10 rounded border px-3 text-sm" onChange={(e) => set('position', e.target.value)} value={form.position}><option>PROFESSOR</option><option>CHAIR</option><option>DEAN</option></select>
+                  </>
+                ) : (
+                  <>
+                    <input className="h-10 rounded border px-3 text-sm" onChange={(e) => set('studentId', e.target.value)} placeholder="Student ID" required value={form.studentId} />
+                    <input className="h-10 rounded border px-3 text-sm" onChange={(e) => set('course', e.target.value)} placeholder="Course" required value={form.course} />
+                    <input className="h-10 rounded border px-3 text-sm" min={1} onChange={(e) => set('yearLevel', e.target.value)} placeholder="Year level" required type="number" value={form.yearLevel} />
+                  </>
+                )}
+                <select className="h-10 rounded border px-3 text-sm" onChange={(e) => set('departmentId', e.target.value)} required value={form.departmentId || departments.data?.data[0]?.id || ''}>{departments.data?.data.map((department) => <option key={department.id} value={department.id}>{department.name}</option>)}</select>
+                <input className="h-10 rounded border px-3 text-sm" minLength={12} onChange={(e) => set('password', e.target.value)} placeholder="Initial password" required type="password" value={form.password} />
               </>
             ) : (
-              <p className="m-0 mt-3 text-[13px] text-[#434343]">No record selected.</p>
+              <>
+                <input className="h-10 rounded border px-3 text-sm" onChange={(e) => set('name', e.target.value)} placeholder="Name" required value={form.name} />
+                <input className="h-10 rounded border px-3 text-sm" onChange={(e) => set('location', e.target.value)} placeholder="Location" value={form.location} />
+                <textarea className="min-h-20 rounded border px-3 py-2 text-sm" onChange={(e) => set('description', e.target.value)} placeholder="Description" value={form.description} />
+              </>
             )}
+            <input className="h-10 rounded border px-3 text-sm" onChange={(e) => set('email', e.target.value)} placeholder="Email" required type="email" value={form.email} />
+            {error ? <p className="text-xs text-red-700">{error}</p> : null}
+            <button className="inline-flex h-10 items-center justify-center gap-2 rounded bg-[#1b3a6b] text-sm font-semibold text-white" type="submit"><Plus size={15} /> Create</button>
+          </form>
+          <section className="rounded border border-[#1b3a6b] bg-white p-5 shadow-[3px_3px_2.5px_1px_#1b3a6b]">
+            <h2 className="text-xl font-semibold text-[#1b3a6b]">Selected Record</h2>
+            {selected ? (
+              <div className="mt-5 grid gap-3">
+                {edit ? (
+                  <form className="grid gap-3" onSubmit={update}>
+                    {section === 'faculty' || section === 'students' ? (
+                      <>
+                        <input className="h-10 rounded border px-3 text-sm" onChange={(event) => setEdit({ ...edit, firstName: event.target.value })} placeholder="First name" required value={edit.firstName} />
+                        <input className="h-10 rounded border px-3 text-sm" onChange={(event) => setEdit({ ...edit, lastName: event.target.value })} placeholder="Last name" required value={edit.lastName} />
+                        {section === 'faculty' ? (
+                          <>
+                            <input className="h-10 rounded border px-3 text-sm" onChange={(event) => setEdit({ ...edit, employeeId: event.target.value })} placeholder="Employee ID" required value={edit.employeeId} />
+                            <select className="h-10 rounded border px-3 text-sm" onChange={(event) => setEdit({ ...edit, position: event.target.value })} value={edit.position}><option>PROFESSOR</option><option>CHAIR</option><option>DEAN</option></select>
+                          </>
+                        ) : (
+                          <>
+                            <input className="h-10 rounded border px-3 text-sm" onChange={(event) => setEdit({ ...edit, studentId: event.target.value })} placeholder="Student ID" required value={edit.studentId} />
+                            <input className="h-10 rounded border px-3 text-sm" onChange={(event) => setEdit({ ...edit, course: event.target.value })} placeholder="Course" required value={edit.course} />
+                            <input className="h-10 rounded border px-3 text-sm" min={1} onChange={(event) => setEdit({ ...edit, yearLevel: event.target.value })} placeholder="Year level" required type="number" value={edit.yearLevel} />
+                          </>
+                        )}
+                        <select className="h-10 rounded border px-3 text-sm" onChange={(event) => setEdit({ ...edit, departmentId: event.target.value })} required value={edit.departmentId}>{departments.data?.data.map((department) => <option key={department.id} value={department.id}>{department.name}</option>)}</select>
+                      </>
+                    ) : (
+                      <>
+                        <input className="h-10 rounded border px-3 text-sm" onChange={(event) => setEdit({ ...edit, name: event.target.value })} placeholder="Name" required value={edit.name} />
+                        <input className="h-10 rounded border px-3 text-sm" onChange={(event) => setEdit({ ...edit, location: event.target.value })} placeholder="Location" value={edit.location} />
+                        <textarea className="min-h-20 rounded border px-3 py-2 text-sm" onChange={(event) => setEdit({ ...edit, description: event.target.value })} placeholder="Description" value={edit.description} />
+                      </>
+                    )}
+                    <input className="h-10 rounded border px-3 text-sm" onChange={(event) => setEdit({ ...edit, email: event.target.value })} placeholder="Email" required type="email" value={edit.email} />
+                    <button className="inline-flex h-10 items-center justify-center gap-2 rounded bg-[#1b3a6b] text-sm font-semibold text-white" type="submit"><Save size={15} /> Save Changes</button>
+                    <button className="h-9 text-sm font-semibold text-[#434343]" onClick={() => setEdit(null)} type="button">Cancel Edit</button>
+                  </form>
+                ) : (
+                  <button className="inline-flex h-10 w-full items-center justify-center gap-2 rounded border border-[#1b3a6b] text-sm font-semibold text-[#1b3a6b]" onClick={beginEdit} type="button"><Pencil size={15} /> Edit</button>
+                )}
+                <button className="inline-flex h-10 w-full items-center justify-center gap-2 rounded border border-red-700 text-sm font-semibold text-red-700" onClick={() => void remove()} type="button"><Trash2 size={15} /> Deactivate / Delete</button>
+              </div>
+            ) : <p className="mt-3 text-sm">No record selected.</p>}
           </section>
         </aside>
       </div>

@@ -8,6 +8,7 @@ export function BrandPanel() {
   useEffect(() => {
     const message = authBrandMessages[messageIndex]
     let characterIndex = 0
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setTypedText('')
 
     const typingTimer = window.setInterval(() => {

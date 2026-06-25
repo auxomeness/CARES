@@ -20,11 +20,7 @@ function isJwtPayload(value: unknown): value is JwtPayload {
 
   const candidate = value as Record<string, unknown>;
 
-  return (
-    typeof candidate.userId === "string" &&
-    typeof candidate.email === "string" &&
-    isRole(candidate.role)
-  );
+  return typeof candidate.userId === "string" && isRole(candidate.role);
 }
 
 export async function hashPassword(password: string): Promise<string> {
@@ -35,22 +31,29 @@ export async function comparePassword(password: string, passwordHash: string): P
   return bcrypt.compare(password, passwordHash);
 }
 
-export function generateAccessToken(user: Pick<SafeUserProfile, "id" | "email" | "role">): string {
+export function generateAccessToken(user: Pick<SafeUserProfile, "id" | "role">): string {
   const payload: JwtPayload = {
     userId: user.id,
-    email: user.email,
     role: user.role
   };
 
   const options: SignOptions = {
-    expiresIn: env.JWT_EXPIRES_IN as SignOptions["expiresIn"]
+    expiresIn: env.JWT_EXPIRES_IN as SignOptions["expiresIn"],
+    algorithm: "HS256",
+    issuer: env.JWT_ISSUER,
+    audience: env.JWT_AUDIENCE,
+    subject: user.id
   };
 
   return jwt.sign(payload, env.JWT_SECRET as Secret, options);
 }
 
 export function verifyToken(token: string): JwtPayload {
-  const decoded = jwt.verify(token, env.JWT_SECRET as Secret);
+  const decoded = jwt.verify(token, env.JWT_SECRET as Secret, {
+    algorithms: ["HS256"],
+    issuer: env.JWT_ISSUER,
+    audience: env.JWT_AUDIENCE
+  });
 
   if (!isJwtPayload(decoded)) {
     throw new UnauthorizedError("Invalid token payload");

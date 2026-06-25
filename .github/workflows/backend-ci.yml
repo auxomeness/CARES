@@ -1,0 +1,63 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: cares_test
+          POSTGRES_USER: cares
+          POSTGRES_PASSWORD: cares
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U cares -d cares_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgresql://cares:cares@localhost:5432/cares_test
+      JWT_SECRET: ci-secret-key-with-at-least-thirty-two-characters
+      JWT_EXPIRES_IN: 1h
+      JWT_ISSUER: cares-api
+      JWT_AUDIENCE: cares-client
+      CORS_ORIGIN: http://localhost:5173
+      REDIS_URL: ""
+      NOTIFICATION_QUEUE_ENABLED: "false"
+      NOTIFICATION_QUEUE_REQUIRED: "false"
+      DIRECTORY_CACHE_TTL_SECONDS: 0
+      REQUEST_TIMEOUT_MS: 15000
+      METRICS_TOKEN: ""
+      SUPABASE_URL: ""
+      SUPABASE_SERVICE_ROLE_KEY: ""
+      SUPABASE_BUCKET: ""
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - run: npm ci
+      - run: npm run prisma:generate
+      - run: npx prisma migrate deploy
+      - run: npm run prisma:seed
+      - run: npm run lint
+      - run: npm run build
+      - run: npm test

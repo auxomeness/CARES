@@ -1,10 +1,7 @@
 import { Prisma } from "@prisma/client";
 
 import { prisma } from "../../../config/database";
-import {
-  CreateDepartmentInput,
-  UpdateDepartmentInput
-} from "../types/department.types";
+import { CreateDepartmentInput, UpdateDepartmentInput } from "../types/department.types";
 
 export const departmentRepository = {
   findAll(input: { skip: number; take: number; search?: string }) {

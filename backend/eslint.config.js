@@ -13,7 +13,8 @@ module.exports = tseslint.config(
       ecmaVersion: 2022,
       sourceType: "commonjs",
       globals: {
-        ...globals.node
+        ...globals.node,
+        ...globals.vitest
       }
     },
     rules: {
@@ -21,8 +22,8 @@ module.exports = tseslint.config(
       "@typescript-eslint/no-unused-vars": [
         "error",
         {
-          "argsIgnorePattern": "^_",
-          "varsIgnorePattern": "^_"
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_"
         }
       ]
     }

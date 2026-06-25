@@ -21,3 +21,15 @@ export type LoginResult = {
   accessToken: string;
   user: SafeUserProfile;
 };
+
+export type RegisterStudentInput = {
+  email: string;
+  password: string;
+  firstName: string;
+  middleName?: string;
+  lastName: string;
+  studentId: string;
+  course: string;
+  yearLevel: number;
+  departmentId: string;
+};

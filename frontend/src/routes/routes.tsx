@@ -4,12 +4,14 @@ import {
   AdminDepartmentsPage,
   AdminFacultyPage,
   AdminOfficesPage,
+  AdminStudentsPage,
 } from '../pages/admin'
 import { AuthPage } from '../pages/auth'
 import {
   DepartmentAppointmentsPage,
   DepartmentConcernsPage,
   DepartmentDashboardPage,
+  DepartmentDirectoryPage,
   DepartmentReportsPage,
 } from '../pages/department'
 import {
@@ -57,6 +59,7 @@ export type AppRouteId =
   | 'department_concerns'
   | 'department_appointments'
   | 'department_reports'
+  | 'department_directory'
   | 'faculty'
   | 'faculty_appointments'
   | 'faculty_reports'
@@ -65,6 +68,7 @@ export type AppRouteId =
   | 'admin_offices'
   | 'admin_departments'
   | 'admin_faculty'
+  | 'admin_students'
 
 export type AppRoute = {
   id: AppRouteId
@@ -231,6 +235,13 @@ export const appRoutes: AppRoute[] = [
     element: <DepartmentReportsPage />,
   },
   {
+    id: 'department_directory',
+    label: 'Department Directory',
+    path: '/department/directory',
+    hash: '#department-directory',
+    element: <DepartmentDirectoryPage />,
+  },
+  {
     id: 'faculty',
     label: 'Faculty',
     path: '/faculty',
@@ -286,6 +297,13 @@ export const appRoutes: AppRoute[] = [
     path: '/admin/faculty',
     hash: '#admin-faculty',
     element: <AdminFacultyPage />,
+  },
+  {
+    id: 'admin_students',
+    label: 'Admin Students',
+    path: '/admin/students',
+    hash: '#admin-students',
+    element: <AdminStudentsPage />,
   },
 ]
 

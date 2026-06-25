@@ -3,10 +3,8 @@ import { Prisma } from "@prisma/client";
 import { ConflictError, NotFoundError } from "../../../shared/errors";
 import { PaginationQuery } from "../../../shared/types/pagination.types";
 import { getPagination } from "../../../shared/utils/pagination";
-import {
-  CreateDepartmentInput,
-  UpdateDepartmentInput
-} from "../types/department.types";
+import { invalidateCachePattern } from "../../../shared/utils/cache";
+import { CreateDepartmentInput, UpdateDepartmentInput } from "../types/department.types";
 import { departmentRepository } from "../repository/department.repository";
 
 export const departmentService = {
@@ -41,7 +39,9 @@ export const departmentService = {
     await ensureDepartmentNameAvailable(input.name);
     await ensureDepartmentEmailAvailable(input.email);
 
-    return departmentRepository.create(input);
+    const department = await departmentRepository.create(input);
+    await invalidateCachePattern("directory:departments:*");
+    return department;
   },
 
   async updateDepartment(id: string, input: UpdateDepartmentInput) {
@@ -55,14 +55,24 @@ export const departmentService = {
       await ensureDepartmentEmailAvailable(input.email);
     }
 
-    return departmentRepository.update(id, input);
+    const department = await departmentRepository.update(id, input);
+    await Promise.all([
+      invalidateCachePattern("directory:departments:*"),
+      invalidateCachePattern("directory:faculty:*")
+    ]);
+    return department;
   },
 
   async deleteDepartment(id: string) {
     await this.getDepartmentById(id);
 
     try {
-      return await departmentRepository.delete(id);
+      const department = await departmentRepository.delete(id);
+      await Promise.all([
+        invalidateCachePattern("directory:departments:*"),
+        invalidateCachePattern("directory:faculty:*")
+      ]);
+      return department;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2003") {
         throw new ConflictError("Department cannot be deleted while related records exist");

@@ -16,5 +16,20 @@ export const logger = pino({
       : undefined,
   base: {
     service: "cares-api"
+  },
+  redact: {
+    paths: [
+      "req.headers.authorization",
+      "req.headers.cookie",
+      "authorization",
+      "password",
+      "*.password",
+      "token",
+      "*.token",
+      "accessToken",
+      "*.accessToken",
+      "SUPABASE_SERVICE_ROLE_KEY"
+    ],
+    censor: "[REDACTED]"
   }
 });

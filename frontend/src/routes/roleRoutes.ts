@@ -25,3 +25,7 @@ export function getWorkspaceForBackendRole(role: BackendRole) {
 export function getHomePathForBackendRole(role: BackendRole) {
   return roleHomePaths[getWorkspaceForBackendRole(role)]
 }
+
+export function getHomeHashForBackendRole(role: BackendRole) {
+  return `#${getWorkspaceForBackendRole(role)}`
+}

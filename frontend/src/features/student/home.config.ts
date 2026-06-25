@@ -1,5 +1,4 @@
 import {
-  Bell,
   Building2,
   Briefcase,
   CalendarSearch,
@@ -19,21 +18,8 @@ export type StudentHomeAction = {
 
 export type StudentSection = 'home' | 'feed' | 'concerns' | 'appointments' | 'offices' | 'profile'
 
-export type StudentConcernSummary = {
-  id: string
-  location: string
-  title: string
-  description: string
-  status: string
-}
-
-export type StudentPopularConcern = {
-  label: string
-  count: number
-}
-
 export const studentHomeProfile = {
-  name: 'Xian Humphrey',
+  name: 'Student',
   role: 'Student',
   href: '#student-profile',
 }
@@ -47,7 +33,7 @@ export const studentHomeBrand = {
 export const studentDashboardIntro = {
   title: 'Student Dashboard',
   subtitle: 'Feel free to disclose any concerns or appoint meetings anytime.',
-  greeting: 'Welcome back, Xian!',
+  greeting: 'Welcome back!',
   description:
     'Your active concerns and appointments are organized here so you can move from reporting to follow-up with fewer steps.',
 }
@@ -168,55 +154,6 @@ export function getStudentMobileNavItems(activeSection: StudentSection): Navigat
   return withActiveSection(studentMobileNavBaseItems, activeSection)
 }
 
-export const studentConcernSummaries: StudentConcernSummary[] = [
-  {
-    id: 'ID-001',
-    location: 'Location',
-    title: 'Appointment Title',
-    description: 'Concerns and suggestions description raised across campus.',
-    status: 'Status',
-  },
-  {
-    id: 'ID-002',
-    location: 'Location',
-    title: 'Appointment Title',
-    description: 'Concerns and suggestions description raised across campus.',
-    status: 'Status',
-  },
-  {
-    id: 'ID-004',
-    location: 'Location',
-    title: 'Appointment Title',
-    description: 'Concerns and suggestions description raised across campus.',
-    status: 'Status',
-  },
-]
-
-export const studentNotifications = [
-  'Your appointment request was received.',
-  'Office staff updated a concern status.',
-  'A response is ready for review.',
-]
-
-export const studentPopularConcerns: StudentPopularConcern[] = [
-  {
-    label: 'OSA',
-    count: 3,
-  },
-  {
-    label: 'PE Department',
-    count: 2,
-  },
-  {
-    label: 'Department of Justice',
-    count: 6,
-  },
-  {
-    label: 'Bureau of Fire',
-    count: 1,
-  },
-]
-
 export const studentUtilityNavItem: NavigationUtilityItem = {
   label: 'Directories',
   href: '#student-directories-office',
@@ -240,5 +177,3 @@ export const studentUtilityNavItem: NavigationUtilityItem = {
     },
   ],
 }
-
-export const studentNotificationIcon = Bell

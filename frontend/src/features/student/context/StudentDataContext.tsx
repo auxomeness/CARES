@@ -1,136 +1,189 @@
-import { type ReactNode, useCallback, useMemo, useState } from 'react'
-import {
-  initialStudentAppointments,
-  initialStudentConcerns,
-} from '../studentData.config'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { type ReactNode, useCallback, useMemo } from 'react'
+import { getApiErrorMessage } from '@/lib/api'
+import { useAuth } from '@/features/auth/AuthContext'
+import type { AppointmentRecord, ConcernRecord } from '@/lib/apiTypes'
+import { appointmentApi, concernApi } from '@/services/caresApi'
 import type {
   AppointmentInput,
+  AppointmentStatus,
   ConcernInput,
+  ConcernStatus,
   StudentAppointment,
   StudentConcern,
 } from '../studentData.types'
 import { StudentDataContext, type StudentDataContextValue } from './studentDataStore'
 
-type StudentDataProviderProps = {
-  children: ReactNode
+const concernStatus: Record<string, ConcernStatus> = {
+  SUBMITTED: 'For Approval',
+  UNDER_REVIEW: 'Pending',
+  IN_PROGRESS: 'Approved',
+  TRANSFERRED: 'Pending',
+  AWAITING_CONFIRMATION: 'Approved',
+  REOPENED: 'Pending',
+  RESOLVED: 'Completed',
+  CLOSED: 'Completed',
 }
 
-function nextConcernId(items: StudentConcern[]) {
-  const nextNumber =
-    Math.max(0, ...items.map((item) => Number(item.id.replace('CON-', '')) || 0)) + 1
-
-  return `CON-${String(nextNumber).padStart(3, '0')}`
+const appointmentStatus: Record<string, AppointmentStatus> = {
+  PENDING: 'Pending',
+  APPROVED: 'Approved',
+  REJECTED: 'Cancelled',
+  RESCHEDULED: 'Approved',
+  COMPLETED: 'Completed',
+  CANCELLED: 'Cancelled',
 }
 
-function nextAppointmentId(items: StudentAppointment[]) {
-  const nextNumber =
-    Math.max(0, ...items.map((item) => Number(item.id.replace('APT-', '')) || 0)) + 1
-
-  return `APT-${String(nextNumber).padStart(3, '0')}`
+function fullName(user?: {
+  firstName: string
+  middleName?: string | null
+  lastName: string
+}) {
+  return user ? [user.firstName, user.middleName, user.lastName].filter(Boolean).join(' ') : 'Student'
 }
 
-function todayLabel() {
-  return new Intl.DateTimeFormat('en-US', {
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  }).format(new Date())
+// eslint-disable-next-line react-refresh/only-export-components
+export function mapConcern(record: ConcernRecord): StudentConcern {
+  const target = record.targetOffice ?? record.targetDepartment
+  return {
+    id: record.referenceNumber,
+    apiId: record.id,
+    title: record.title,
+    description: record.description,
+    category: record.targetType === 'OFFICE' ? 'Student Services' : 'Academic',
+    location: target?.name ?? record.targetType,
+    status: concernStatus[record.status] ?? 'Pending',
+    backendStatus: record.status,
+    visibility: record.visibility.toLowerCase() as 'public' | 'private',
+    anonymous: false,
+    author: fullName(record.submittedBy?.user),
+    createdAt: new Date(record.createdAt).toLocaleDateString(),
+    reactions: record._count?.supports ?? 0,
+    progress:
+      record.status === 'RESOLVED' || record.status === 'CLOSED'
+        ? 100
+        : record.status === 'AWAITING_CONFIRMATION'
+          ? 85
+          : record.status === 'IN_PROGRESS'
+            ? 60
+            : 25,
+    detail: record,
+  }
 }
 
-export function StudentDataProvider({ children }: StudentDataProviderProps) {
-  const [concerns, setConcerns] = useState(initialStudentConcerns)
-  const [appointments, setAppointments] = useState(initialStudentAppointments)
+// eslint-disable-next-line react-refresh/only-export-components
+export function mapAppointment(record: AppointmentRecord): StudentAppointment {
+  const start = new Date(record.startTime)
+  const target = record.office?.name ?? record.department?.name ?? record.faculty?.user?.lastName ?? ''
+  return {
+    id: record.id,
+    mode: record.targetType === 'OFFICE' ? 'office' : 'department',
+    office: target,
+    department: record.department?.name,
+    faculty: record.faculty?.user
+      ? fullName(record.faculty.user)
+      : undefined,
+    date: start.toLocaleDateString(),
+    time: start.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
+    purpose: record.title,
+    consultationCategory: record.targetType,
+    description: record.description ?? '',
+    status: appointmentStatus[record.status] ?? 'Pending',
+    backendStatus: record.status,
+    createdAt: record.startTime,
+    detail: record,
+  }
+}
 
-  const addConcern = useCallback((input: ConcernInput) => {
-    setConcerns((currentConcerns) => [
-      {
-        ...input,
-        id: nextConcernId(currentConcerns),
-        status: 'For Approval',
-        author: input.anonymous ? 'Anonymous student' : 'Xian Humphrey',
-        createdAt: todayLabel(),
-        reactions: 0,
-        progress: 18,
-      },
-      ...currentConcerns,
+export function StudentDataProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth()
+  const queryClient = useQueryClient()
+  const enabled = user?.role === 'STUDENT'
+  const concernsQuery = useQuery({
+    queryKey: ['concerns', 'mine'],
+    queryFn: () => concernApi.list({ page: 1, limit: 100 }),
+    retry: false,
+    enabled,
+  })
+  const appointmentsQuery = useQuery({
+    queryKey: ['appointments', 'mine'],
+    queryFn: () => appointmentApi.list({ page: 1, limit: 100 }),
+    retry: false,
+    enabled,
+  })
+
+  const refresh = useCallback(async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['concerns'] }),
+      queryClient.invalidateQueries({ queryKey: ['appointments'] }),
+      queryClient.invalidateQueries({ queryKey: ['notifications'] }),
     ])
-  }, [])
-
-  const updateConcern = useCallback((id: string, input: ConcernInput) => {
-    setConcerns((currentConcerns) =>
-      currentConcerns.map((concern) =>
-        concern.id === id
-          ? {
-              ...concern,
-              ...input,
-              author: input.anonymous ? 'Anonymous student' : 'Xian Humphrey',
-            }
-          : concern,
-      ),
-    )
-  }, [])
-
-  const deleteConcern = useCallback((id: string) => {
-    setConcerns((currentConcerns) => currentConcerns.filter((concern) => concern.id !== id))
-  }, [])
-
-  const upConcern = useCallback((id: string) => {
-    setConcerns((currentConcerns) =>
-      currentConcerns.map((concern) =>
-        concern.id === id ? { ...concern, reactions: concern.reactions + 1 } : concern,
-      ),
-    )
-  }, [])
-
-  const addAppointment = useCallback((input: AppointmentInput) => {
-    setAppointments((currentAppointments) => [
-      {
-        ...input,
-        id: nextAppointmentId(currentAppointments),
-        status: 'Pending',
-        createdAt: todayLabel(),
-      },
-      ...currentAppointments,
-    ])
-  }, [])
-
-  const updateAppointment = useCallback((id: string, input: AppointmentInput) => {
-    setAppointments((currentAppointments) =>
-      currentAppointments.map((appointment) =>
-        appointment.id === id ? { ...appointment, ...input } : appointment,
-      ),
-    )
-  }, [])
-
-  const deleteAppointment = useCallback((id: string) => {
-    setAppointments((currentAppointments) =>
-      currentAppointments.filter((appointment) => appointment.id !== id),
-    )
-  }, [])
+  }, [queryClient])
 
   const value = useMemo<StudentDataContextValue>(
     () => ({
-      concerns,
-      appointments,
-      addConcern,
-      updateConcern,
-      deleteConcern,
-      upConcern,
-      addAppointment,
-      updateAppointment,
-      deleteAppointment,
+      concerns: (concernsQuery.data?.data ?? []).map(mapConcern),
+      appointments: (appointmentsQuery.data?.data ?? []).map(mapAppointment),
+      isLoading: concernsQuery.isLoading || appointmentsQuery.isLoading,
+      error: concernsQuery.error
+        ? getApiErrorMessage(concernsQuery.error)
+        : appointmentsQuery.error
+          ? getApiErrorMessage(appointmentsQuery.error)
+          : '',
+      addConcern: async (input: ConcernInput) => {
+        const concern = await concernApi.create({
+          title: input.title,
+          description: input.description,
+          visibility: input.visibility.toUpperCase(),
+          targetType: input.targetType,
+          targetOfficeId: input.targetOfficeId ?? null,
+          targetDepartmentId: input.targetDepartmentId ?? null,
+        })
+        if (input.image) await concernApi.upload(concern.id, input.image)
+        await refresh()
+      },
+      updateConcern: async () => {
+        throw new Error('Submitted concerns are immutable. Use resolution actions to update state.')
+      },
+      deleteConcern: async () => {
+        throw new Error('Submitted concerns cannot be deleted.')
+      },
+      upConcern: async (id: string) => {
+        const record = (concernsQuery.data?.data ?? []).find(
+          (concern) => concern.id === id || concern.referenceNumber === id,
+        )
+        await concernApi.support(record?.id ?? id)
+        await refresh()
+      },
+      addAppointment: async (input: AppointmentInput) => {
+        await appointmentApi.create({
+          title: input.purpose,
+          description: input.description,
+          targetType: input.targetType,
+          officeId: input.officeId ?? null,
+          departmentId: input.departmentId ?? null,
+          facultyId: input.facultyId ?? null,
+          startTime: input.startTime,
+          endTime: input.endTime,
+        })
+        await refresh()
+      },
+      updateAppointment: async (id: string, input: AppointmentInput) => {
+        if (!input.startTime || !input.endTime) throw new Error('Choose a new schedule.')
+        await appointmentApi.reschedule(id, {
+          newStartTime: input.startTime,
+          newEndTime: input.endTime,
+          reason: 'Student requested a new schedule',
+        })
+        await refresh()
+      },
+      deleteAppointment: async (id: string) => {
+        await appointmentApi.cancel(id)
+        await refresh()
+      },
+      refresh,
     }),
-    [
-      concerns,
-      appointments,
-      addConcern,
-      updateConcern,
-      deleteConcern,
-      upConcern,
-      addAppointment,
-      updateAppointment,
-      deleteAppointment,
-    ],
+    [appointmentsQuery, concernsQuery, refresh],
   )
 
   return <StudentDataContext.Provider value={value}>{children}</StudentDataContext.Provider>

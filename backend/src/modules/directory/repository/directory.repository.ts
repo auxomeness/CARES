@@ -3,12 +3,14 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "../../../config/database";
 
 export const directoryRepository = {
-  findFaculty(search?: string) {
+  findFaculty(input: { search?: string; skip: number; take: number }) {
     return prisma.facultyProfile.findMany({
       where: {
         user: { isActive: true },
-        ...(search ? { OR: buildFacultySearch(search) } : {})
+        ...(input.search ? { OR: buildFacultySearch(input.search) } : {})
       },
+      skip: input.skip,
+      take: input.take,
       select: {
         id: true,
         position: true,
@@ -30,17 +32,28 @@ export const directoryRepository = {
     });
   },
 
-  findOffices(search?: string) {
+  countFaculty(search?: string) {
+    return prisma.facultyProfile.count({
+      where: {
+        user: { isActive: true },
+        ...(search ? { OR: buildFacultySearch(search) } : {})
+      }
+    });
+  },
+
+  findOffices(input: { search?: string; skip: number; take: number }) {
     return prisma.office.findMany({
-      where: search
+      where: input.search
         ? {
             OR: [
-              { name: { contains: search, mode: "insensitive" } },
-              { email: { contains: search, mode: "insensitive" } },
-              { location: { contains: search, mode: "insensitive" } }
+              { name: { contains: input.search, mode: "insensitive" } },
+              { email: { contains: input.search, mode: "insensitive" } },
+              { location: { contains: input.search, mode: "insensitive" } }
             ]
           }
         : undefined,
+      skip: input.skip,
+      take: input.take,
       select: {
         id: true,
         name: true
@@ -49,8 +62,8 @@ export const directoryRepository = {
     });
   },
 
-  findDepartments(search?: string) {
-    return prisma.department.findMany({
+  countOffices(search?: string) {
+    return prisma.office.count({
       where: search
         ? {
             OR: [
@@ -59,12 +72,42 @@ export const directoryRepository = {
               { location: { contains: search, mode: "insensitive" } }
             ]
           }
+        : undefined
+    });
+  },
+
+  findDepartments(input: { search?: string; skip: number; take: number }) {
+    return prisma.department.findMany({
+      where: input.search
+        ? {
+            OR: [
+              { name: { contains: input.search, mode: "insensitive" } },
+              { email: { contains: input.search, mode: "insensitive" } },
+              { location: { contains: input.search, mode: "insensitive" } }
+            ]
+          }
         : undefined,
+      skip: input.skip,
+      take: input.take,
       select: {
         id: true,
         name: true
       },
       orderBy: { name: "asc" }
+    });
+  },
+
+  countDepartments(search?: string) {
+    return prisma.department.count({
+      where: search
+        ? {
+            OR: [
+              { name: { contains: search, mode: "insensitive" } },
+              { email: { contains: search, mode: "insensitive" } },
+              { location: { contains: search, mode: "insensitive" } }
+            ]
+          }
+        : undefined
     });
   }
 };

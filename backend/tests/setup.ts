@@ -1,0 +1,16 @@
+process.env.NODE_ENV ??= "test";
+process.env.DATABASE_URL ??= "postgresql://austin@localhost:5432/cares_dev";
+process.env.JWT_SECRET ??= "cares-test-secret-key-with-at-least-32-characters";
+process.env.JWT_EXPIRES_IN ??= "1h";
+process.env.JWT_ISSUER ??= "cares-api";
+process.env.JWT_AUDIENCE ??= "cares-client";
+process.env.CORS_ORIGIN ??= "http://localhost:5173";
+process.env.REDIS_URL ??= "";
+process.env.NOTIFICATION_QUEUE_ENABLED ??= "false";
+process.env.NOTIFICATION_QUEUE_REQUIRED ??= "false";
+process.env.DIRECTORY_CACHE_TTL_SECONDS ??= "0";
+process.env.REQUEST_TIMEOUT_MS ??= "15000";
+process.env.METRICS_TOKEN ??= "";
+process.env.SUPABASE_URL ??= "";
+process.env.SUPABASE_SERVICE_ROLE_KEY ??= "";
+process.env.SUPABASE_BUCKET ??= "";

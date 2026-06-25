@@ -3,6 +3,7 @@ import { Prisma } from "@prisma/client";
 import { ConflictError, NotFoundError } from "../../../shared/errors";
 import { PaginationQuery } from "../../../shared/types/pagination.types";
 import { getPagination } from "../../../shared/utils/pagination";
+import { invalidateCachePattern } from "../../../shared/utils/cache";
 import { CreateOfficeInput, UpdateOfficeInput } from "../types/office.types";
 import { officeRepository } from "../repository/office.repository";
 
@@ -38,7 +39,9 @@ export const officeService = {
     await ensureOfficeNameAvailable(input.name);
     await ensureOfficeEmailAvailable(input.email);
 
-    return officeRepository.create(input);
+    const office = await officeRepository.create(input);
+    await invalidateCachePattern("directory:offices:*");
+    return office;
   },
 
   async updateOffice(id: string, input: UpdateOfficeInput) {
@@ -52,14 +55,18 @@ export const officeService = {
       await ensureOfficeEmailAvailable(input.email);
     }
 
-    return officeRepository.update(id, input);
+    const office = await officeRepository.update(id, input);
+    await invalidateCachePattern("directory:offices:*");
+    return office;
   },
 
   async deleteOffice(id: string) {
     await this.getOfficeById(id);
 
     try {
-      return await officeRepository.delete(id);
+      const office = await officeRepository.delete(id);
+      await invalidateCachePattern("directory:offices:*");
+      return office;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2003") {
         throw new ConflictError("Office cannot be deleted while related records exist");

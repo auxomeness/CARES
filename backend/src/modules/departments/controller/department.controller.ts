@@ -7,14 +7,13 @@ import {
   successResponse
 } from "../../../shared/utils/apiResponse";
 import { departmentService } from "../service/department.service";
-import {
-  CreateDepartmentInput,
-  UpdateDepartmentInput
-} from "../types/department.types";
+import { CreateDepartmentInput, UpdateDepartmentInput } from "../types/department.types";
 
 export const departmentController = {
   async getAllDepartments(req: Request, res: Response): Promise<Response> {
-    const result = await departmentService.getAllDepartments(req.query as unknown as PaginationQuery);
+    const result = await departmentService.getAllDepartments(
+      req.query as unknown as PaginationQuery
+    );
 
     return paginatedResponse(res, "Departments retrieved successfully", result.data, result.meta);
   },

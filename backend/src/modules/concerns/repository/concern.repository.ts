@@ -147,6 +147,33 @@ export const concernRepository = {
     return prisma.concern.count({ where });
   },
 
+  findPublic(query: ConcernListQuery, skip: number, take: number) {
+    const where: Prisma.ConcernWhereInput = {
+      visibility: "PUBLIC",
+      ...(query.status ? { status: query.status } : {}),
+      ...(query.search
+        ? {
+            OR: [
+              { title: { contains: query.search, mode: "insensitive" } },
+              { description: { contains: query.search, mode: "insensitive" } },
+              { referenceNumber: { contains: query.search, mode: "insensitive" } }
+            ]
+          }
+        : {})
+    };
+
+    return Promise.all([
+      prisma.concern.findMany({
+        where,
+        skip,
+        take,
+        include: concernSummaryInclude,
+        orderBy: { createdAt: "desc" }
+      }),
+      prisma.concern.count({ where })
+    ]);
+  },
+
   findById(id: string) {
     return prisma.concern.findUnique({
       where: { id },
@@ -159,6 +186,8 @@ export const concernRepository = {
       where: { id },
       select: {
         id: true,
+        referenceNumber: true,
+        title: true,
         status: true,
         visibility: true,
         targetType: true,

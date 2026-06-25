@@ -6,6 +6,7 @@ import { BadRequestError, BaseError } from "../../../shared/errors";
 import { authenticate } from "../../../shared/middleware/authenticate";
 import { authorize } from "../../../shared/middleware/authorize";
 import { validateRequest } from "../../../shared/middleware/validateRequest";
+import { submissionRateLimiter } from "../../../shared/middleware/submissionRateLimiter";
 import { asyncHandler } from "../../../shared/utils/asyncHandler";
 import { attachmentController } from "../concern-attachments/attachment.controller";
 import { resolutionController } from "../concern-resolutions/resolution.controller";
@@ -74,9 +75,16 @@ concernRoutes.get(
   validateRequest({ query: concernListQuerySchema }),
   asyncHandler(concernController.getConcerns)
 );
+concernRoutes.get(
+  "/public",
+  authorize([UserRole.STUDENT]),
+  validateRequest({ query: concernListQuerySchema }),
+  asyncHandler(concernController.getPublicConcerns)
+);
 concernRoutes.post(
   "/",
   authorize([UserRole.STUDENT]),
+  submissionRateLimiter,
   validateRequest({ body: createConcernSchema }),
   asyncHandler(concernController.createConcern)
 );

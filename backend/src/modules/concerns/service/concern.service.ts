@@ -16,6 +16,9 @@ import {
 } from "../../../shared/errors";
 import { AuthenticatedUser } from "../../../shared/types/auth.types";
 import { getPagination } from "../../../shared/utils/pagination";
+import { logger } from "../../../shared/utils/logger";
+import { publishNotificationEvent } from "../../notifications/service/notification.events";
+import { NotificationEventType } from "../../notifications/types/notification.types";
 import { concernRepository } from "../repository/concern.repository";
 import {
   ConcernListQuery,
@@ -52,12 +55,23 @@ export const concernService = {
 
     for (let attempt = 0; attempt < 3; attempt += 1) {
       try {
-        return await concernRepository.createConcern(
+        const concern = await concernRepository.createConcern(
           input,
           student.id,
           actor.id,
           generateReferenceNumber()
         );
+        publishNotificationEvent({
+          type: NotificationEventType.CONCERN_SUBMITTED,
+          resourceId: concern.id,
+          resourceTitle: concern.title,
+          referenceNumber: concern.referenceNumber,
+          studentUserId: actor.id,
+          targetType: concern.targetType,
+          officeId: concern.targetOfficeId,
+          departmentId: concern.targetDepartmentId
+        });
+        return concern;
       } catch (error) {
         if (
           error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -90,6 +104,12 @@ export const concernService = {
         total
       }
     };
+  },
+
+  async getPublicConcerns(query: ConcernListQuery) {
+    const { skip, take } = getPagination(query);
+    const [data, total] = await concernRepository.findPublic(query, skip, take);
+    return { data, meta: { page: query.page, limit: query.limit, total } };
   },
 
   async getConcernById(id: string, actor: AuthenticatedUser) {
@@ -148,11 +168,33 @@ export const concernService = {
       throw new BadRequestError("Transfer target must differ from the current target");
     }
 
-    return concernRepository.transfer(id, actor.id, input, {
+    const concern = await concernRepository.transfer(id, actor.id, input, {
       targetType: access.targetType,
       targetOfficeId: access.targetOfficeId,
       targetDepartmentId: access.targetDepartmentId
     });
+    publishNotificationEvent({
+      type: NotificationEventType.CONCERN_TRANSFERRED,
+      resourceId: concern.id,
+      resourceTitle: concern.title,
+      referenceNumber: concern.referenceNumber,
+      studentUserId: concern.submittedBy.user.id,
+      actorUserId: actor.id,
+      targetType: concern.targetType,
+      officeId: concern.targetOfficeId,
+      departmentId: concern.targetDepartmentId,
+      reason: input.reason
+    });
+    logger.info(
+      {
+        action: "concern_transfer",
+        concernId: concern.id,
+        actorUserId: actor.id,
+        targetType: concern.targetType
+      },
+      "Concern transferred"
+    );
+    return concern;
   },
 
   async createResolution(id: string, input: CreateResolutionInput, actor: AuthenticatedUser) {
@@ -163,7 +205,27 @@ export const concernService = {
       throw new ConflictError(`Concern cannot be resolved from ${access.status}`);
     }
 
-    return concernRepository.createResolution(id, actor.id, input);
+    const concern = await concernRepository.createResolution(id, actor.id, input);
+    publishNotificationEvent({
+      type: NotificationEventType.CONCERN_RESOLVED,
+      resourceId: concern.id,
+      resourceTitle: concern.title,
+      referenceNumber: concern.referenceNumber,
+      studentUserId: concern.submittedBy.user.id,
+      actorUserId: actor.id,
+      targetType: concern.targetType,
+      officeId: concern.targetOfficeId,
+      departmentId: concern.targetDepartmentId
+    });
+    logger.info(
+      {
+        action: "concern_resolution_submitted",
+        concernId: concern.id,
+        actorUserId: actor.id
+      },
+      "Concern resolution submitted"
+    );
+    return concern;
   },
 
   async confirmResolution(id: string, actor: AuthenticatedUser) {
@@ -194,7 +256,33 @@ export const concernService = {
       throw new ConflictError("Concern has no resolution report");
     }
 
-    return concernRepository.rejectResolution(id, student.id, actor.id, input.reason);
+    const concern = await concernRepository.rejectResolution(
+      id,
+      student.id,
+      actor.id,
+      input.reason
+    );
+    publishNotificationEvent({
+      type: NotificationEventType.CONCERN_REOPENED,
+      resourceId: concern.id,
+      resourceTitle: concern.title,
+      referenceNumber: concern.referenceNumber,
+      studentUserId: actor.id,
+      actorUserId: actor.id,
+      targetType: concern.targetType,
+      officeId: concern.targetOfficeId,
+      departmentId: concern.targetDepartmentId,
+      reason: input.reason
+    });
+    logger.info(
+      {
+        action: "concern_reopened",
+        concernId: concern.id,
+        actorUserId: actor.id
+      },
+      "Concern reopened"
+    );
+    return concern;
   },
 
   async addSupport(id: string, actor: AuthenticatedUser) {
@@ -209,7 +297,19 @@ export const concernService = {
     }
 
     try {
-      return await concernRepository.addSupport(id, student.id, actor.id);
+      const support = await concernRepository.addSupport(id, student.id, actor.id);
+      publishNotificationEvent({
+        type: NotificationEventType.CONCERN_SUPPORT_ADDED,
+        resourceId: access.id,
+        resourceTitle: access.title,
+        referenceNumber: access.referenceNumber,
+        studentUserId: access.submittedBy.userId,
+        actorUserId: actor.id,
+        targetType: access.targetType,
+        officeId: access.targetOfficeId,
+        departmentId: access.targetDepartmentId
+      });
+      return support;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
         throw new ConflictError("You already support this concern");

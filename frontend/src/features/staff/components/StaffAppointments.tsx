@@ -1,225 +1,88 @@
-import { Check, Clock, Send, Shuffle, X } from 'lucide-react'
-import { type FormEvent, useMemo, useState } from 'react'
-import type { StaffAppointment, StaffAppointmentStatus, StaffRole } from '../staffData'
-import {
-  appointmentStatusOptions,
-  staffAppointments,
-  staffRoleConfigs,
-  transferTargets,
-} from '../staffData'
-import { StaffStatusBadge, StaffTimeline } from './StaffShared'
+import { Check, X, CheckCircle2 } from 'lucide-react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useState } from 'react'
+import { getApiErrorMessage } from '@/lib/api'
+import { appointmentApi } from '@/services/caresApi'
+import type { StaffRole } from '../staffData'
+import { staffRoleConfigs } from '../staffData'
 import { StaffWorkspaceShell } from './StaffWorkspaceShell'
 
-type StaffAppointmentsProps = {
-  role: StaffRole
-}
-
-export function StaffAppointments({ role }: StaffAppointmentsProps) {
+export function StaffAppointments({ role }: { role: StaffRole }) {
   const config = staffRoleConfigs[role]
-  const scopedAppointments = useMemo(
-    () => staffAppointments.filter((appointment) => appointment.role === role),
-    [role],
-  )
-  const [selectedId, setSelectedId] = useState(scopedAppointments[0]?.id ?? '')
-  const selectedAppointment =
-    scopedAppointments.find((appointment) => appointment.id === selectedId) ??
-    scopedAppointments[0] ??
+  const queryClient = useQueryClient()
+  const appointments = useQuery({
+    queryKey: ['appointments', 'staff'],
+    queryFn: () => appointmentApi.list({ page: 1, limit: 100 }),
+  })
+  const [selectedId, setSelectedId] = useState('')
+  const [reason, setReason] = useState('')
+  const [dayOfWeek, setDayOfWeek] = useState('1')
+  const [availabilityStart, setAvailabilityStart] = useState('09:00')
+  const [availabilityEnd, setAvailabilityEnd] = useState('12:00')
+  const [error, setError] = useState('')
+  const selected =
+    appointments.data?.data.find((item) => item.id === selectedId) ??
+    appointments.data?.data[0] ??
     null
-  const [status, setStatus] = useState<StaffAppointmentStatus>(
-    selectedAppointment?.status ?? 'Requested',
-  )
-  const [transferTarget, setTransferTarget] = useState(transferTargets[0])
-  const [message, setMessage] = useState('')
-  const [isSaving, setIsSaving] = useState(false)
 
-  const selectAppointment = (appointment: StaffAppointment) => {
-    setSelectedId(appointment.id)
-    setStatus(appointment.status)
-    setTransferTarget(appointment.target)
-    setMessage('')
-  }
-
-  const updateStatus = (nextStatus: StaffAppointmentStatus) => {
-    setStatus(nextStatus)
-  }
-
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
-    setIsSaving(true)
-    window.setTimeout(() => setIsSaving(false), 900)
+  const mutate = async (action: () => Promise<unknown>) => {
+    setError('')
+    try {
+      await action()
+      await queryClient.invalidateQueries({ queryKey: ['appointments'] })
+    } catch (failure) {
+      setError(getApiErrorMessage(failure))
+    }
   }
 
   return (
     <StaffWorkspaceShell activeSection="appointments" config={config}>
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_400px] xl:items-start">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_400px]">
         <section>
-          <div>
-            <p className="m-0 text-[12px] font-bold uppercase tracking-[0.08em] text-[#1b3a6b]">
-              {config.unitName}
-            </p>
-            <h1 className="m-0 mt-1 text-[36px] font-bold leading-tight text-[#1b3a6b]">
-              Appointment Requests
-            </h1>
-            <p className="m-0 mt-2 max-w-[720px] text-[16px] font-light leading-snug text-[#434343]">
-              Approve, decline, complete, or transfer student appointment requests while keeping
-              the status timeline visible.
-            </p>
+          <h1 className="text-4xl font-bold text-[#1b3a6b]">Appointment Requests</h1>
+          <p className="mt-2 text-[#434343]">Approve, reject, or complete bookings assigned to you.</p>
+          {appointments.isLoading ? <p className="mt-8 text-sm">Loading appointments...</p> : null}
+          <div className="mt-8 grid gap-4">
+            {appointments.data?.data.map((appointment) => (
+              <button className={`rounded border p-4 text-left shadow-[3px_3px_2.5px_1px_#1b3a6b] ${selected?.id === appointment.id ? 'bg-[#c1d9ff]' : 'bg-white'}`} key={appointment.id} onClick={() => setSelectedId(appointment.id)} type="button">
+                <div className="flex justify-between gap-3"><h2 className="text-xl font-semibold">{appointment.title}</h2><span className="rounded bg-[#edf4ff] px-3 py-1 text-xs font-semibold">{appointment.status}</span></div>
+                <p className="mt-3 text-sm">{new Date(appointment.startTime).toLocaleString()}</p>
+                <p className="mt-1 text-xs text-[#707070]">{appointment.student ? `${appointment.student.user.firstName} ${appointment.student.user.lastName}` : ''}</p>
+              </button>
+            ))}
+            {!appointments.isLoading && !appointments.data?.data.length ? <p className="rounded border bg-white p-6 text-center text-sm">No appointment requests.</p> : null}
           </div>
-
-          <section className="mt-8 grid gap-4" aria-label="Appointment requests">
-            {scopedAppointments.map((appointment) => {
-              const isSelected = appointment.id === selectedAppointment?.id
-
-              return (
-                <button
-                  className={`rounded-[6px] border px-4 py-4 text-left shadow-[3px_3px_2.5px_1px_#1b3a6b] transition duration-200 hover:-translate-y-0.5 active:scale-[0.995] ${
-                    isSelected
-                      ? 'border-[#1b3a6b] bg-[#c1d9ff]'
-                      : 'border-[#295498]/70 bg-white hover:bg-[#f8fbff]'
-                  }`}
-                  key={appointment.id}
-                  onClick={() => selectAppointment(appointment)}
-                  type="button"
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <p className="m-0 text-[11px] font-semibold text-[#1b3a6b]">
-                        {appointment.id} · {appointment.requester}
-                      </p>
-                      <h2 className="m-0 mt-2 text-[21px] font-semibold leading-tight">
-                        {appointment.purpose}
-                      </h2>
-                    </div>
-                    <StaffStatusBadge status={appointment.status} />
-                  </div>
-                  <div className="mt-4 flex flex-wrap gap-3 text-[12px] font-medium text-[#434343]">
-                    <span>{appointment.date}</span>
-                    <span className="inline-flex items-center gap-1">
-                      <Clock aria-hidden="true" size={14} />
-                      {appointment.time}
-                    </span>
-                    <span>{appointment.target}</span>
-                  </div>
-                </button>
-              )
-            })}
-          </section>
         </section>
-
-        <aside className="rounded-[6px] border border-[#1b3a6b] bg-white px-5 py-5 shadow-[3px_3px_2.5px_1px_#1b3a6b] xl:sticky xl:top-8">
-          <h2 className="m-0 text-[22px] font-semibold text-[#1b3a6b]">Request Action</h2>
-          {selectedAppointment ? (
-            <form className="mt-5" onSubmit={handleSubmit}>
-              <p className="m-0 text-[11px] font-semibold text-[#1b3a6b]">
-                {selectedAppointment.id}
-              </p>
-              <h3 className="m-0 mt-1 text-[20px] font-semibold leading-tight">
-                {selectedAppointment.purpose}
-              </h3>
-              <p className="m-0 mt-3 text-[13px] leading-snug text-[#434343]">
-                {selectedAppointment.notes}
-              </p>
-
-              <div className="mt-5 grid grid-cols-2 gap-2">
-                <button
-                  className="inline-flex h-9 items-center justify-center gap-2 rounded-[5px] border border-[#1b3a6b] bg-[#1b3a6b] text-[12px] font-semibold !text-white transition duration-200 hover:bg-[#295498] active:scale-[0.98]"
-                  onClick={() => updateStatus('Approved')}
-                  type="button"
-                >
-                  <Check aria-hidden="true" size={14} />
-                  Approve
-                </button>
-                <button
-                  className="inline-flex h-9 items-center justify-center gap-2 rounded-[5px] border border-[#8a1f1f] bg-white text-[12px] font-semibold text-[#8a1f1f] transition duration-200 hover:bg-[#f0d7d7] active:scale-[0.98]"
-                  onClick={() => updateStatus('Declined')}
-                  type="button"
-                >
-                  <X aria-hidden="true" size={14} />
-                  Decline
-                </button>
-              </div>
-
-              <label className="mt-4 grid gap-2 text-[12px] font-semibold text-[#1b3a6b]">
-                Status
-                <select
-                  className="h-10 rounded-[5px] border border-[#7fa8de] bg-white px-3 text-[13px] outline-none focus:ring-2 focus:ring-[#9fbef1]"
-                  onChange={(event) => setStatus(event.target.value as StaffAppointmentStatus)}
-                  value={status}
-                >
-                  {appointmentStatusOptions.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="mt-4 grid gap-2 text-[12px] font-semibold text-[#1b3a6b]">
-                Transfer To
-                <select
-                  className="h-10 rounded-[5px] border border-[#7fa8de] bg-white px-3 text-[13px] outline-none focus:ring-2 focus:ring-[#9fbef1]"
-                  onChange={(event) => setTransferTarget(event.target.value)}
-                  value={transferTarget}
-                >
-                  {transferTargets.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="mt-4 grid gap-2 text-[12px] font-semibold text-[#1b3a6b]">
-                Notification Message
-                <textarea
-                  className="min-h-[96px] resize-none rounded-[5px] border border-[#7fa8de] bg-white px-3 py-3 text-[13px] outline-none focus:ring-2 focus:ring-[#9fbef1]"
-                  onChange={(event) => setMessage(event.target.value)}
-                  placeholder="Message sent to the student and receiving office."
-                  value={message}
-                />
-              </label>
-
-              <div className="mt-5">
-                <h4 className="m-0 text-[14px] font-semibold text-[#1b3a6b]">
-                  Status Timeline
-                </h4>
-                <div className="mt-3">
-                  <StaffTimeline
-                    items={[
-                      ...selectedAppointment.timeline,
-                      status === 'Transferred'
-                        ? `Transfer queued to ${transferTarget}`
-                        : `Marked as ${status}`,
-                    ]}
-                  />
-                </div>
-              </div>
-
-              <div className="mt-6 grid gap-3">
-                <button
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-[5px] border border-[#1b3a6b] bg-[#1b3a6b] text-[13px] font-semibold !text-white transition duration-200 hover:bg-[#295498] active:scale-[0.98]"
-                  type="submit"
-                >
-                  {isSaving ? (
-                    <span className="size-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                  ) : (
-                    <Send aria-hidden="true" size={15} />
-                  )}
-                  Save and Notify
-                </button>
-                <button
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-[5px] border border-[#1b3a6b] bg-white text-[13px] font-semibold text-[#1b3a6b] transition duration-200 hover:bg-[#edf4ff] active:scale-[0.98]"
-                  onClick={() => updateStatus('Transferred')}
-                  type="button"
-                >
-                  <Shuffle aria-hidden="true" size={15} />
-                  Transfer Request
-                </button>
-              </div>
-            </form>
-          ) : (
-            <p className="m-0 mt-3 text-[13px] text-[#434343]">No appointment requests yet.</p>
-          )}
+        <aside className="h-fit rounded border border-[#1b3a6b] bg-white p-5 shadow-[3px_3px_2.5px_1px_#1b3a6b]">
+          <h2 className="text-xl font-semibold text-[#1b3a6b]">Request Action</h2>
+          {selected ? (
+            <div className="mt-5 grid gap-3">
+              <h3 className="text-lg font-semibold">{selected.title}</h3>
+              <p className="text-sm">{selected.description || 'No description'}</p>
+              {selected.status === 'PENDING' ? (
+                <button className="inline-flex h-10 items-center justify-center gap-2 rounded bg-green-700 text-sm font-semibold text-white" onClick={() => void mutate(() => appointmentApi.approve(selected.id))} type="button"><Check size={16} /> Approve</button>
+              ) : null}
+              <textarea className="min-h-20 rounded border px-3 py-2 text-sm" onChange={(e) => setReason(e.target.value)} placeholder="Reason required for rejection" value={reason} />
+              {selected.status === 'PENDING' ? (
+                <button className="inline-flex h-10 items-center justify-center gap-2 rounded border border-red-700 text-sm font-semibold text-red-700" disabled={!reason.trim()} onClick={() => void mutate(() => appointmentApi.reject(selected.id, reason))} type="button"><X size={16} /> Reject</button>
+              ) : null}
+              {selected.status === 'APPROVED' ? (
+                <button className="inline-flex h-10 items-center justify-center gap-2 rounded bg-[#1b3a6b] text-sm font-semibold text-white" onClick={() => void mutate(() => appointmentApi.complete(selected.id))} type="button"><CheckCircle2 size={16} /> Complete</button>
+              ) : null}
+              {error ? <p className="text-xs text-red-700">{error}</p> : null}
+            </div>
+          ) : <p className="mt-3 text-sm">No appointment selected.</p>}
+          <div className="mt-6 border-t pt-5">
+            <h3 className="text-base font-semibold text-[#1b3a6b]">Add Availability</h3>
+            <div className="mt-3 grid grid-cols-3 gap-2">
+              <select className="h-9 rounded border px-2 text-xs" onChange={(e) => setDayOfWeek(e.target.value)} value={dayOfWeek}>
+                <option value="1">Mon</option><option value="2">Tue</option><option value="3">Wed</option><option value="4">Thu</option><option value="5">Fri</option><option value="6">Sat</option><option value="7">Sun</option>
+              </select>
+              <input className="h-9 rounded border px-2 text-xs" onChange={(e) => setAvailabilityStart(e.target.value)} type="time" value={availabilityStart} />
+              <input className="h-9 rounded border px-2 text-xs" onChange={(e) => setAvailabilityEnd(e.target.value)} type="time" value={availabilityEnd} />
+            </div>
+            <button className="mt-3 h-9 w-full rounded border border-[#1b3a6b] text-xs font-semibold text-[#1b3a6b]" onClick={() => void mutate(() => appointmentApi.createAvailability({ dayOfWeek: Number(dayOfWeek), startTime: availabilityStart, endTime: availabilityEnd, slotDuration: 30, isActive: true }))} type="button">Create 30-minute slots</button>
+          </div>
         </aside>
       </div>
     </StaffWorkspaceShell>

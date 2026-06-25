@@ -412,6 +412,7 @@ model AppointmentReschedule {
 model Notification {
   id        String   @id @default(cuid())
   userId    String
+  eventKey  String?
   title     String
   message   String
   isRead    Boolean  @default(false)
@@ -419,6 +420,7 @@ model Notification {
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 
+  @@unique([userId, eventKey])
   @@index([userId])
   @@index([isRead])
   @@index([userId, isRead])

@@ -5,18 +5,19 @@ import { getConcernStatusClass } from '../studentUi'
 
 type FeedConcernCardProps = {
   concern: StudentConcern
-  onUp: (id: string) => void
+  onUp: (id: string) => Promise<void>
 }
 
 export function FeedConcernCard({ concern, onUp }: FeedConcernCardProps) {
   const [isReacting, setIsReacting] = useState(false)
 
-  const handleUp = () => {
+  const handleUp = async () => {
     setIsReacting(true)
-    window.setTimeout(() => {
-      onUp(concern.id)
+    try {
+      await onUp(concern.id)
+    } finally {
       setIsReacting(false)
-    }, 180)
+    }
   }
 
   return (
@@ -60,7 +61,7 @@ export function FeedConcernCard({ concern, onUp }: FeedConcernCardProps) {
 
         <button
           className="inline-flex h-[30px] min-w-[58px] items-center justify-center gap-1.5 rounded-[5px] bg-[#1b3a6b] px-3 text-[12px] font-semibold !text-white transition duration-200 hover:bg-[#295498] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9fbef1] active:scale-95 sm:min-w-[86px]"
-          onClick={handleUp}
+          onClick={() => void handleUp()}
           type="button"
         >
           {isReacting ? (

@@ -13,5 +13,11 @@ export const userController = {
     const user = await userService.getCurrentUserProfile(req.user);
 
     return successResponse(res, "User profile retrieved successfully", { user });
+  },
+
+  async updateMe(req: Request, res: Response): Promise<Response> {
+    if (!req.user) throw new UnauthorizedError("Authentication required");
+    const user = await userService.updateCurrentUserProfile(req.user, req.body);
+    return successResponse(res, "User profile updated successfully", { user });
   }
 };

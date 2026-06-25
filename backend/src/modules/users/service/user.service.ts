@@ -26,5 +26,25 @@ export const userService = {
       createdAt: user.createdAt,
       updatedAt: user.updatedAt
     };
+  },
+
+  async updateCurrentUserProfile(
+    actor: AuthenticatedUser,
+    input: {
+      email?: string;
+      firstName?: string;
+      middleName?: string | null;
+      lastName?: string;
+      course?: string;
+      yearLevel?: number;
+    }
+  ) {
+    if ((input.course !== undefined || input.yearLevel !== undefined) && actor.role !== "STUDENT") {
+      throw new ForbiddenError("Academic profile fields are only available to students");
+    }
+
+    const user = await userRepository.updateCurrentUser(actor.id, input);
+    if (!user) throw new NotFoundError("User not found");
+    return user;
   }
 };

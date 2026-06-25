@@ -1,11 +1,21 @@
 import { Request, Response } from "express";
 
 import { UnauthorizedError } from "../../shared/errors";
-import { successResponse } from "../../shared/utils/apiResponse";
+import { createdResponse, successResponse } from "../../shared/utils/apiResponse";
 import { authService } from "./auth.service";
-import { LoginInput } from "./auth.types";
+import { LoginInput, RegisterStudentInput } from "./auth.types";
 
 export const authController = {
+  async register(req: Request, res: Response): Promise<Response> {
+    const result = await authService.registerStudent(req.body as RegisterStudentInput);
+    return createdResponse(res, "Registration successful", result);
+  },
+
+  async departments(_req: Request, res: Response): Promise<Response> {
+    const departments = await authService.listRegistrationDepartments();
+    return successResponse(res, "Registration departments retrieved", { departments });
+  },
+
   async login(req: Request, res: Response): Promise<Response> {
     const result = await authService.login(req.body as LoginInput);
 

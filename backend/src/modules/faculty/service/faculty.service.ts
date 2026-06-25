@@ -9,6 +9,7 @@ import {
 import { AuthenticatedUser } from "../../../shared/types/auth.types";
 import { PaginationQuery } from "../../../shared/types/pagination.types";
 import { getPagination } from "../../../shared/utils/pagination";
+import { invalidateCachePattern } from "../../../shared/utils/cache";
 import { hashPassword } from "../../auth/auth.utils";
 import { facultyRepository, roleForFacultyPosition } from "../repository/faculty.repository";
 import { CreateFacultyInput, UpdateFacultyInput } from "../types/faculty.types";
@@ -52,7 +53,9 @@ export const facultyService = {
     const passwordHash = await hashPassword(input.password);
     const role = roleForFacultyPosition(input.position);
 
-    return facultyRepository.create(input, passwordHash, role);
+    const faculty = await facultyRepository.create(input, passwordHash, role);
+    await invalidateCachePattern("directory:faculty:*");
+    return faculty;
   },
 
   async updateFaculty(id: string, input: UpdateFacultyInput) {
@@ -74,7 +77,9 @@ export const facultyService = {
     const role = input.position ? roleForFacultyPosition(input.position) : undefined;
 
     try {
-      return await facultyRepository.update(id, input, passwordHash, role);
+      const faculty = await facultyRepository.update(id, input, passwordHash, role);
+      await invalidateCachePattern("directory:faculty:*");
+      return faculty;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
         throw new ConflictError("Faculty email or employee id already exists");
@@ -88,7 +93,9 @@ export const facultyService = {
     await getExistingFaculty(id);
 
     try {
-      return await facultyRepository.deactivate(id);
+      const faculty = await facultyRepository.deactivate(id);
+      await invalidateCachePattern("directory:faculty:*");
+      return faculty;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2003") {
         throw new ConflictError("Faculty member cannot be deleted while related records exist");

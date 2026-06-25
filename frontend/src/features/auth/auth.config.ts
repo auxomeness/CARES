@@ -17,10 +17,10 @@ export const authModes: Record<AuthMode, AuthModeConfig> = {
     },
     fields: [
       {
-        id: 'username',
-        label: 'Username',
-        type: 'text',
-        autoComplete: 'username',
+        id: 'email',
+        label: 'Email',
+        type: 'email',
+        autoComplete: 'email',
       },
       {
         id: 'password',
@@ -44,10 +44,16 @@ export const authModes: Record<AuthMode, AuthModeConfig> = {
     },
     fields: [
       {
-        id: 'username',
-        label: 'Username',
+        id: 'firstName',
+        label: 'First Name',
         type: 'text',
-        autoComplete: 'username',
+        autoComplete: 'given-name',
+      },
+      {
+        id: 'lastName',
+        label: 'Last Name',
+        type: 'text',
+        autoComplete: 'family-name',
       },
       {
         id: 'email',
@@ -61,44 +67,31 @@ export const authModes: Record<AuthMode, AuthModeConfig> = {
         type: 'password',
         autoComplete: 'new-password',
       },
+      {
+        id: 'studentId',
+        label: 'Student ID',
+        type: 'text',
+        autoComplete: 'off',
+      },
+      {
+        id: 'course',
+        label: 'Course',
+        type: 'text',
+        autoComplete: 'organization-title',
+      },
+      {
+        id: 'yearLevel',
+        label: 'Year Level',
+        type: 'text',
+        autoComplete: 'off',
+      },
     ],
   },
 }
 
 export const progressSteps = ['submitted', 'for approval', 'in progress', 'approved']
 
-export const authRoleCredentials: AuthRoleCredential[] = [
-  {
-    username: 'student',
-    label: 'Student',
-    route: '#student',
-    description: 'Student dashboard, feed, concerns, appointments, and directories.',
-  },
-  {
-    username: 'office',
-    label: 'Office',
-    route: '#office',
-    description: 'Assigned concerns, appointments, transfers, and reports.',
-  },
-  {
-    username: 'department',
-    label: 'Department',
-    route: '#department',
-    description: 'Academic concerns and department appointment approvals.',
-  },
-  {
-    username: 'faculty',
-    label: 'Faculty',
-    route: '#faculty',
-    description: 'Faculty schedules, appointment requests, and completion logs.',
-  },
-  {
-    username: 'admin',
-    label: 'Admin',
-    route: '#admin',
-    description: 'System analytics and CRUD management for offices, departments, and faculty.',
-  },
-]
+export const authRoleCredentials: AuthRoleCredential[] = []
 
 export const authBrandMessages = [
   'Submit a concern, complaint, or suggestion and track its progress.',

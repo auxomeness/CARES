@@ -1,6 +1,9 @@
 import { Loader2 } from 'lucide-react'
-import { type FormEvent, useMemo, useState } from 'react'
-import { authRoleCredentials } from '../auth.config'
+import { type FormEvent, useEffect, useState } from 'react'
+import { useAuth } from '../AuthContext'
+import { authApi } from '../auth.api'
+import type { DirectoryRecord } from '@/lib/apiTypes'
+import { getApiErrorMessage } from '@/lib/api'
 import type { AuthMode, AuthModeConfig } from '../types'
 import { AuthField } from './AuthField'
 import { AuthOptions } from './AuthOptions'
@@ -17,40 +20,47 @@ export function AuthForm({ config, mode, onModeChange }: AuthFormProps) {
   const [values, setValues] = useState<Record<string, string>>({})
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const normalizedUsername = values.username?.trim().toLowerCase() ?? ''
-  const matchedRole = useMemo(
-    () => authRoleCredentials.find((credential) => credential.username === normalizedUsername),
-    [normalizedUsername],
-  )
+  const [departments, setDepartments] = useState<DirectoryRecord[]>([])
+  const { login, register } = useAuth()
+
+  useEffect(() => {
+    if (isRegister) {
+      void authApi.departments().then(setDepartments).catch(() => setDepartments([]))
+    }
+  }, [isRegister])
 
   const updateField = (id: string, value: string) => {
     setValues((currentValues) => ({ ...currentValues, [id]: value }))
     setError('')
   }
 
-  const submitForm = (event: FormEvent<HTMLFormElement>) => {
+  const submitForm = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-
-    if (isRegister) {
-      setIsSubmitting(true)
-      window.setTimeout(() => {
-        setIsSubmitting(false)
-        onModeChange('login')
-      }, 700)
-      return
-    }
-
-    if (!matchedRole) {
-      setError('Use a role username: student, office, department, faculty, or admin.')
-      return
-    }
-
     setIsSubmitting(true)
+    setError('')
 
-    window.setTimeout(() => {
-      window.location.hash = matchedRole.route
+    try {
+      if (isRegister) {
+        const departmentId = values.departmentId || departments[0]?.id
+        if (!departmentId) throw new Error('Choose an academic department.')
+        await register({
+          email: values.email ?? '',
+          password: values.password ?? '',
+          firstName: values.firstName ?? '',
+          lastName: values.lastName ?? '',
+          studentId: values.studentId ?? '',
+          course: values.course ?? '',
+          yearLevel: Number(values.yearLevel),
+          departmentId,
+        })
+      } else {
+        await login({ email: values.email ?? '', password: values.password ?? '' })
+      }
+    } catch (submitError) {
+      setError(getApiErrorMessage(submitError))
+    } finally {
       setIsSubmitting(false)
-    }, 850)
+    }
   }
 
   return (
@@ -69,6 +79,23 @@ export function AuthForm({ config, mode, onModeChange }: AuthFormProps) {
             value={values[field.id] ?? ''}
           />
         ))}
+        {isRegister ? (
+          <label className="grid gap-2 text-[12px] font-semibold text-[#1b3a6b]">
+            Department
+            <select
+              className="h-10 rounded-[10px] border border-[#7fa8de] bg-white px-3 text-[13px]"
+              onChange={(event) => updateField('departmentId', event.target.value)}
+              required
+              value={values.departmentId ?? departments[0]?.id ?? ''}
+            >
+              {departments.map((department) => (
+                <option key={department.id} value={department.id}>
+                  {department.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null}
       </div>
 
       <AuthOptions mode={mode} />
@@ -95,7 +122,7 @@ export function AuthForm({ config, mode, onModeChange }: AuthFormProps) {
           <span className="absolute inset-0 grid place-items-center" role="status">
             <span className="inline-flex items-center gap-2 text-[12px] tracking-normal">
               <Loader2 aria-hidden="true" className="size-4 animate-spin" />
-              Loading workspace
+              {isRegister ? 'Creating account' : 'Signing in'}
             </span>
           </span>
         ) : null}

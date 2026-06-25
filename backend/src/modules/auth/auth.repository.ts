@@ -13,6 +13,12 @@ const safeUserSelect = {
 } as const;
 
 export const authRepository = {
+  listRegistrationDepartments() {
+    return prisma.department.findMany({
+      select: { id: true, name: true },
+      orderBy: { name: "asc" }
+    });
+  },
   findUserForLogin(email: string) {
     return prisma.user.findUnique({
       where: { email },

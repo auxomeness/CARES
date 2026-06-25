@@ -1,6 +1,7 @@
 import { lazy, Suspense, useState } from 'react'
 import { Building2, CalendarDays, Clock, FileText, X } from 'lucide-react'
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader'
+import { useAuth } from '@/features/auth/AuthContext'
 import { SearchField } from '@/components/forms/SearchField'
 import {
   studentDashboardIntro,
@@ -19,6 +20,7 @@ const StudentRightPanel = lazy(() =>
 )
 
 export function StudentHome() {
+  const { user } = useAuth()
   const { appointments } = useStudentData()
   const [selectedAppointment, setSelectedAppointment] = useState<StudentAppointment | null>(null)
   const visibleAppointments = appointments.slice(0, 3)
@@ -42,7 +44,7 @@ export function StudentHome() {
 
       <section className="mt-[17px] min-h-[125px] rounded-[5px] border border-[#295498]/70 bg-[#f5d788] px-[9px] py-3 shadow-[3px_3px_2.5px_1px_#1b3a6b] transition duration-200 hover:-translate-y-0.5 hover:shadow-[4px_5px_4px_1px_#1b3a6b] lg:mt-[45px] lg:min-h-[156px] lg:px-[14px]">
         <h2 className="m-0 text-[25px] font-semibold leading-none text-[#1b3a6b] lg:text-[27px]">
-          {studentDashboardIntro.greeting}
+          Welcome back, {user?.firstName ?? 'Student'}!
         </h2>
         <p className="m-0 mt-[14px] max-w-[637px] text-[10px] font-light leading-[1.4] text-[#101010] lg:text-[14px]">
           {studentDashboardIntro.description}

@@ -72,7 +72,7 @@ export function AdminShell({ activeSection, children }: AdminShellProps) {
         {children}
       </div>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-40 grid h-[67px] grid-cols-4 bg-[#101827] px-4 pt-3 shadow-[0_-8px_24px_rgba(16,24,39,0.25)] lg:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 z-40 grid h-[67px] grid-cols-5 bg-[#101827] px-4 pt-3 shadow-[0_-8px_24px_rgba(16,24,39,0.25)] lg:hidden">
         {adminNav.map((item) => {
           const Icon = item.icon
           const isActive = item.section === activeSection

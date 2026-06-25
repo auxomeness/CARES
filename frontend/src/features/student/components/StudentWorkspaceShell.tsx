@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { AppBottomNav } from '@/components/navigation/AppBottomNav'
 import { AppSidebar } from '@/components/navigation/AppSidebar'
+import { useAuth } from '@/features/auth/AuthContext'
 import {
   getStudentHomeNavItems,
   getStudentMobileNavItems,
@@ -25,14 +26,22 @@ export function StudentWorkspaceShell({
   rightRail,
   workspaceClassName = '',
 }: StudentWorkspaceShellProps) {
+  const { user } = useAuth()
   const currentHash = window.location.hash.toLowerCase()
+  const profile = {
+    ...studentHomeProfile,
+    name: user
+      ? [user.firstName, user.middleName, user.lastName].filter(Boolean).join(' ')
+      : 'Student',
+    role: user?.studentProfile?.course ?? 'Student',
+  }
 
   return (
     <main className="min-h-svh overflow-x-hidden bg-[#f2f2f2] text-[#101010] lg:flex">
       <AppSidebar
         brand={studentHomeBrand}
         items={getStudentHomeNavItems(activeSection)}
-        profile={studentHomeProfile}
+        profile={profile}
         utilityItem={{
           ...studentUtilityNavItem,
           active: activeSection === 'offices',
