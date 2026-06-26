@@ -3,6 +3,13 @@ import { z } from "zod";
 
 dotenv.config();
 
+const normalizedProcessEnv = {
+  ...process.env,
+  CORS_ORIGIN: process.env.CORS_ORIGIN || process.env.FRONTEND_URL || "http://localhost:5173",
+  SUPABASE_BUCKET: process.env.SUPABASE_BUCKET || process.env.SUPABASE_STORAGE_BUCKET || "",
+  SUPABASE_STORAGE_BUCKET: process.env.SUPABASE_STORAGE_BUCKET || process.env.SUPABASE_BUCKET || ""
+};
+
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   PORT: z.coerce.number().int().positive().default(3000),
@@ -15,6 +22,7 @@ const envSchema = z.object({
   JWT_ISSUER: z.string().min(1).default("cares-api"),
   JWT_AUDIENCE: z.string().min(1).default("cares-client"),
   CORS_ORIGIN: z.string().min(1, "CORS_ORIGIN is required").default("http://localhost:5173"),
+  FRONTEND_URL: z.string().url().optional().or(z.literal("")),
   REDIS_URL: z.string().url().optional().or(z.literal("")),
   NOTIFICATION_QUEUE_ENABLED: z
     .enum(["true", "false"])
@@ -28,11 +36,13 @@ const envSchema = z.object({
   REQUEST_TIMEOUT_MS: z.coerce.number().int().positive().default(15000),
   METRICS_TOKEN: z.string().min(16).optional().or(z.literal("")),
   SUPABASE_URL: z.string().url().optional().or(z.literal("")),
+  SUPABASE_ANON_KEY: z.string().optional().or(z.literal("")),
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional().or(z.literal("")),
+  SUPABASE_STORAGE_BUCKET: z.string().optional().or(z.literal("")),
   SUPABASE_BUCKET: z.string().optional().or(z.literal(""))
 });
 
-const parsedEnv = envSchema.safeParse(process.env);
+const parsedEnv = envSchema.safeParse(normalizedProcessEnv);
 
 if (!parsedEnv.success) {
   const details = parsedEnv.error.flatten().fieldErrors;
