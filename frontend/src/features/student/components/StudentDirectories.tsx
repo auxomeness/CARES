@@ -6,6 +6,7 @@ import { LoadingLink } from '@/components/feedback/LoadingLink'
 import { SearchField } from '@/components/forms/SearchField'
 import { directoryApi } from '@/services/caresApi'
 import type { DirectoryRecord, FacultyRecord, PaginatedEnvelope } from '@/lib/apiTypes'
+import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue'
 import type { DirectoryKind } from '../studentDirectory.types'
 import { StudentWorkspaceShell } from './StudentWorkspaceShell'
 
@@ -17,14 +18,15 @@ const meta = {
 
 export function StudentDirectories({ kind }: { kind?: DirectoryKind }) {
   const [search, setSearch] = useState('')
+  const debouncedSearch = useDebouncedValue(search.trim())
   const result = useQuery<PaginatedEnvelope<DirectoryRecord | FacultyRecord>>({
-    queryKey: ['directory', kind, search],
+    queryKey: ['directory', kind, debouncedSearch],
     enabled: Boolean(kind),
     queryFn: async () => {
       const params = {
         page: 1,
         limit: 100,
-        ...(search.trim() ? { search: search.trim() } : {}),
+        ...(debouncedSearch ? { search: debouncedSearch } : {}),
       }
       if (kind === 'office') return directoryApi.offices(params)
       if (kind === 'department') return directoryApi.departments(params)

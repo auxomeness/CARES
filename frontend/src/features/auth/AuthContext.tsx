@@ -1,8 +1,18 @@
-import { createContext, type ReactNode, useContext, useEffect, useMemo, useState } from 'react'
+import {
+  createContext,
+  type ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { getAccessToken, setAccessToken } from '@/lib/api'
 import type { UserProfile } from '@/lib/apiTypes'
 import { getHomeHashForBackendRole } from '@/routes/roleRoutes'
-import { authApi, type LoginInput, type RegisterInput } from './auth.api'
+import { authApi, type AuthResult, type LoginInput, type RegisterInput } from './auth.api'
+import { hydrateBootstrapCache } from './bootstrapCache'
 
 type AuthContextValue = {
   user: UserProfile | null
@@ -16,6 +26,7 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient()
   const [user, setUser] = useState<UserProfile | null>(null)
   const [isRestoring, setIsRestoring] = useState(Boolean(getAccessToken()))
 
@@ -26,9 +37,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return
       }
       try {
-        setUser(await authApi.me())
+        const bootstrap = await authApi.bootstrap()
+        hydrateBootstrapCache(queryClient, bootstrap)
+        setUser(bootstrap.user)
       } catch {
         setAccessToken(null)
+        queryClient.clear()
       } finally {
         setIsRestoring(false)
       }
@@ -36,20 +50,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const unauthorized = () => {
       setUser(null)
+      queryClient.clear()
       if (!['#login', '#register'].includes(window.location.hash)) window.location.hash = '#login'
     }
 
     window.addEventListener('cares:unauthorized', unauthorized)
     void restore()
     return () => window.removeEventListener('cares:unauthorized', unauthorized)
-  }, [])
+  }, [queryClient])
 
-  const authenticate = async (action: () => Promise<{ accessToken: string; user: UserProfile }>) => {
-    const result = await action()
-    setAccessToken(result.accessToken)
-    setUser(result.user)
-    window.location.hash = getHomeHashForBackendRole(result.user.role)
-  }
+  const authenticate = useCallback(
+    async (action: () => Promise<AuthResult>) => {
+      const result = await action()
+      setAccessToken(result.accessToken)
+      hydrateBootstrapCache(queryClient, result.bootstrap)
+      const nextUser = result.bootstrap?.user ?? result.user
+      setUser(nextUser)
+      window.location.hash = getHomeHashForBackendRole(nextUser.role)
+    },
+    [queryClient],
+  )
 
   const value = useMemo<AuthContextValue>(
     () => ({
@@ -60,11 +80,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logout: () => {
         setAccessToken(null)
         setUser(null)
+        queryClient.clear()
         window.location.hash = '#login'
       },
       updateProfile: async (input) => setUser(await authApi.updateProfile(input)),
     }),
-    [isRestoring, user],
+    [authenticate, isRestoring, queryClient, user],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

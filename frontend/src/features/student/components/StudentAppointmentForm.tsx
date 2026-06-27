@@ -1,8 +1,8 @@
 import { CalendarDays, Send } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
 import { type FormEvent, useEffect, useState } from 'react'
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader'
 import { getApiErrorMessage } from '@/lib/api'
-import type { DirectoryRecord, FacultyRecord } from '@/lib/apiTypes'
 import { directoryApi } from '@/services/caresApi'
 import { appointmentApi } from '@/services/caresApi'
 import { useStudentData } from '../context/studentDataStore'
@@ -22,9 +22,6 @@ export function StudentAppointmentForm() {
     return tomorrow
   })
   const [targetType, setTargetType] = useState<'OFFICE' | 'DEPARTMENT' | 'PROFESSOR'>('OFFICE')
-  const [offices, setOffices] = useState<DirectoryRecord[]>([])
-  const [departments, setDepartments] = useState<DirectoryRecord[]>([])
-  const [faculty, setFaculty] = useState<FacultyRecord[]>([])
   const [targetId, setTargetId] = useState('')
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -36,37 +33,42 @@ export function StudentAppointmentForm() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [slots, setSlots] = useState<Array<{ startTime: string; endTime: string }>>([])
 
-  useEffect(() => {
-    void Promise.all([
-      directoryApi.offices({ page: 1, limit: 100 }),
-      directoryApi.departments({ page: 1, limit: 100 }),
-      directoryApi.faculty({ page: 1, limit: 100 }),
-    ])
-      .then(([officeResult, departmentResult, facultyResult]) => {
-        setOffices(officeResult.data)
-        setDepartments(departmentResult.data)
-        setFaculty(facultyResult.data)
-        setTargetId(officeResult.data[0]?.id ?? '')
-      })
-      .catch((loadError) => setError(getApiErrorMessage(loadError)))
-  }, [])
-
-  useEffect(() => {
-    if (!targetId || !startTime) return
-
-    void appointmentApi
-      .slots(targetId, targetType, startTime.slice(0, 10))
-      .then((response) => setSlots(response.data?.slots ?? response.slots ?? []))
-      .catch(() => setSlots([]))
-  }, [startTime, targetId, targetType])
-
+  const officesQuery = useQuery({
+    queryKey: ['directory', 'office', 'form'],
+    queryFn: () => directoryApi.offices({ page: 1, limit: 100 }),
+    staleTime: 10 * 60_000,
+  })
+  const departmentsQuery = useQuery({
+    queryKey: ['directory', 'department', 'form'],
+    queryFn: () => directoryApi.departments({ page: 1, limit: 100 }),
+    staleTime: 10 * 60_000,
+  })
+  const facultyQuery = useQuery({
+    queryKey: ['directory', 'faculty', 'form'],
+    queryFn: () => directoryApi.faculty({ page: 1, limit: 100 }),
+    staleTime: 10 * 60_000,
+  })
+  const offices = officesQuery.data?.data ?? []
+  const departments = departmentsQuery.data?.data ?? []
+  const faculty = facultyQuery.data?.data ?? []
   const options =
     targetType === 'OFFICE' ? offices : targetType === 'DEPARTMENT' ? departments : faculty
+  const selectedTargetId = options.some((option) => option.id === targetId)
+    ? targetId
+    : options[0]?.id ?? ''
+
+  useEffect(() => {
+    if (!selectedTargetId || !startTime) return
+
+    void appointmentApi
+      .slots(selectedTargetId, targetType, startTime.slice(0, 10))
+      .then((response) => setSlots(response.data?.slots ?? response.slots ?? []))
+      .catch(() => setSlots([]))
+  }, [startTime, selectedTargetId, targetType])
 
   const chooseType = (type: typeof targetType) => {
     setTargetType(type)
-    const next = type === 'OFFICE' ? offices : type === 'DEPARTMENT' ? departments : faculty
-    setTargetId(next[0]?.id ?? '')
+    setTargetId('')
   }
 
   const submit = async (event: FormEvent) => {
@@ -83,9 +85,9 @@ export function StudentAppointmentForm() {
         consultationCategory: targetType,
         description,
         targetType,
-        officeId: targetType === 'OFFICE' ? targetId : null,
-        departmentId: targetType === 'DEPARTMENT' ? targetId : null,
-        facultyId: targetType === 'PROFESSOR' ? targetId : null,
+        officeId: targetType === 'OFFICE' ? selectedTargetId : null,
+        departmentId: targetType === 'DEPARTMENT' ? selectedTargetId : null,
+        facultyId: targetType === 'PROFESSOR' ? selectedTargetId : null,
         startTime: new Date(startTime).toISOString(),
         endTime: new Date(endTime).toISOString(),
       })
@@ -125,8 +127,11 @@ export function StudentAppointmentForm() {
               className="h-11 rounded border border-[#7fa8de] bg-white px-3"
               onChange={(event) => setTargetId(event.target.value)}
               required
-              value={targetId}
+              value={selectedTargetId}
             >
+              {officesQuery.isLoading || departmentsQuery.isLoading || facultyQuery.isLoading ? (
+                <option value="">Loading targets...</option>
+              ) : null}
               {options.map((option) => (
                 <option key={option.id} value={option.id}>
                   {'user' in option
@@ -136,6 +141,9 @@ export function StudentAppointmentForm() {
               ))}
             </select>
           </label>
+          {officesQuery.isError || departmentsQuery.isError || facultyQuery.isError ? (
+            <p className="text-xs text-red-700">Unable to load appointment targets.</p>
+          ) : null}
           <label className="grid gap-2 text-xs font-semibold text-[#1b3a6b]">
             Purpose
             <input className="h-11 rounded border border-[#7fa8de] px-3" onChange={(e) => setTitle(e.target.value)} required value={title} />
@@ -180,7 +188,7 @@ export function StudentAppointmentForm() {
           </div>
         </section>
         {error ? <p className="rounded bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}
-        <button className="inline-flex h-11 items-center justify-center gap-2 rounded bg-[#1b3a6b] text-sm font-semibold text-white disabled:opacity-60" disabled={isSubmitting || !targetId} type="submit">
+        <button className="inline-flex h-11 items-center justify-center gap-2 rounded bg-[#1b3a6b] text-sm font-semibold text-white disabled:opacity-60" disabled={isSubmitting || !selectedTargetId} type="submit">
           {isSubmitting ? <CalendarDays className="animate-pulse" size={16} /> : <Send size={16} />}
           {isSubmitting ? 'Booking...' : 'Book Appointment'}
         </button>

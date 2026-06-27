@@ -1,8 +1,8 @@
 import { ImagePlus, Send } from 'lucide-react'
-import { type FormEvent, useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { type FormEvent, useState } from 'react'
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader'
 import { getApiErrorMessage } from '@/lib/api'
-import type { DirectoryRecord } from '@/lib/apiTypes'
 import { directoryApi } from '@/services/caresApi'
 import { useStudentData } from '../context/studentDataStore'
 import { StudentWorkspaceShell } from './StudentWorkspaceShell'
@@ -10,8 +10,6 @@ import { StudentWorkspaceShell } from './StudentWorkspaceShell'
 export function StudentConcernForm() {
   const { addConcern } = useStudentData()
   const [targetType, setTargetType] = useState<'OFFICE' | 'DEPARTMENT'>('OFFICE')
-  const [offices, setOffices] = useState<DirectoryRecord[]>([])
-  const [departments, setDepartments] = useState<DirectoryRecord[]>([])
   const [targetId, setTargetId] = useState('')
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -19,38 +17,45 @@ export function StudentConcernForm() {
   const [image, setImage] = useState<File | null>(null)
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
 
-  useEffect(() => {
-    void Promise.all([
-      directoryApi.offices({ page: 1, limit: 100 }),
-      directoryApi.departments({ page: 1, limit: 100 }),
-    ])
-      .then(([officeResult, departmentResult]) => {
-        setOffices(officeResult.data)
-        setDepartments(departmentResult.data)
-        setTargetId(officeResult.data[0]?.id ?? '')
-      })
-      .catch((loadError) => setError(getApiErrorMessage(loadError)))
-  }, [])
+  const officesQuery = useQuery({
+    queryKey: ['directory', 'office', 'form'],
+    queryFn: () => directoryApi.offices({ page: 1, limit: 100 }),
+    staleTime: 10 * 60_000,
+  })
+  const departmentsQuery = useQuery({
+    queryKey: ['directory', 'department', 'form'],
+    queryFn: () => directoryApi.departments({ page: 1, limit: 100 }),
+    staleTime: 10 * 60_000,
+  })
+  const offices = officesQuery.data?.data ?? []
+  const departments = departmentsQuery.data?.data ?? []
+  const targets = targetType === 'OFFICE' ? offices : departments
+  const selectedTargetId = targets.some((target) => target.id === targetId)
+    ? targetId
+    : targets[0]?.id ?? ''
 
   const changeTargetType = (next: 'OFFICE' | 'DEPARTMENT') => {
     setTargetType(next)
-    setTargetId((next === 'OFFICE' ? offices : departments)[0]?.id ?? '')
+    setTargetId('')
   }
 
   const submit = async (event: FormEvent) => {
     event.preventDefault()
     setIsSubmitting(true)
     setError('')
+    setUploadProgress(0)
     try {
       await addConcern({
         title,
         description,
         visibility,
         targetType,
-        targetOfficeId: targetType === 'OFFICE' ? targetId : null,
-        targetDepartmentId: targetType === 'DEPARTMENT' ? targetId : null,
+        targetOfficeId: targetType === 'OFFICE' ? selectedTargetId : null,
+        targetDepartmentId: targetType === 'DEPARTMENT' ? selectedTargetId : null,
         image,
+        onUploadProgress: setUploadProgress,
       })
       window.location.hash = '#student-concerns'
     } catch (submitError) {
@@ -60,7 +65,7 @@ export function StudentConcernForm() {
     }
   }
 
-  const targets = targetType === 'OFFICE' ? offices : departments
+  const isLoadingTargets = officesQuery.isLoading || departmentsQuery.isLoading
 
   return (
     <StudentWorkspaceShell activeSection="concerns" contentClassName="max-w-[760px]">
@@ -92,8 +97,9 @@ export function StudentConcernForm() {
               className="h-11 rounded-[5px] border border-[#7fa8de] bg-white px-3"
               onChange={(event) => setTargetId(event.target.value)}
               required
-              value={targetId}
+              value={selectedTargetId}
             >
+              {isLoadingTargets ? <option value="">Loading targets...</option> : null}
               {targets.map((target) => (
                 <option key={target.id} value={target.id}>
                   {target.name}
@@ -101,6 +107,9 @@ export function StudentConcernForm() {
               ))}
             </select>
           </label>
+          {officesQuery.isError || departmentsQuery.isError ? (
+            <p className="text-xs text-red-700">Unable to load concern targets.</p>
+          ) : null}
           <label className="grid gap-2 text-xs font-semibold text-[#1b3a6b]">
             Title
             <input
@@ -137,15 +146,26 @@ export function StudentConcernForm() {
             <input
               accept="image/jpeg,image/png,image/webp,image/gif"
               className="sr-only"
-              onChange={(event) => setImage(event.target.files?.[0] ?? null)}
+              onChange={(event) => {
+                setImage(event.target.files?.[0] ?? null)
+                setUploadProgress(0)
+              }}
               type="file"
             />
           </label>
+          {isSubmitting && image && uploadProgress > 0 ? (
+            <div className="h-2 overflow-hidden rounded-full bg-[#dbe8fb]">
+              <div
+                className="h-full bg-[#1b3a6b] transition-[width]"
+                style={{ width: `${uploadProgress}%` }}
+              />
+            </div>
+          ) : null}
         </section>
         {error ? <p className="rounded bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p> : null}
         <button
           className="inline-flex h-11 items-center justify-center gap-2 rounded-[5px] bg-[#1b3a6b] px-5 text-sm font-semibold text-white disabled:opacity-60"
-          disabled={isSubmitting || !targetId}
+          disabled={isSubmitting || !selectedTargetId}
           type="submit"
         >
           <Send size={16} />

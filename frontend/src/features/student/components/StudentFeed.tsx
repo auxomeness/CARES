@@ -6,6 +6,7 @@ import { LoadingLink } from '@/components/feedback/LoadingLink'
 import { SearchField } from '@/components/forms/SearchField'
 import { getApiErrorMessage } from '@/lib/api'
 import { concernApi } from '@/services/caresApi'
+import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue'
 import { mapConcern } from '../context/StudentDataContext'
 import { FeedConcernCard } from './FeedConcernCard'
 import { StudentWorkspaceShell } from './StudentWorkspaceShell'
@@ -13,15 +14,17 @@ import { StudentWorkspaceShell } from './StudentWorkspaceShell'
 export function StudentFeed() {
   const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
+  const debouncedSearch = useDebouncedValue(search.trim())
   const [error, setError] = useState('')
   const feed = useQuery({
-    queryKey: ['concerns', 'public', search],
+    queryKey: ['concerns', 'public', debouncedSearch],
     queryFn: () =>
       concernApi.publicFeed({
         page: 1,
         limit: 50,
-        ...(search.trim() ? { search: search.trim() } : {}),
+        ...(debouncedSearch ? { search: debouncedSearch } : {}),
       }),
+    staleTime: 30_000,
   })
   const concerns = (feed.data?.data ?? []).map(mapConcern)
 

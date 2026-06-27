@@ -14,11 +14,22 @@ export function AppProviders({ children }: AppProvidersProps) {
         defaultOptions: {
           queries: {
             retry: 1,
+            staleTime: 30_000,
+            gcTime: 5 * 60_000,
             refetchOnWindowFocus: false,
           },
         },
       }),
   )
+
+  queryClient.setQueryDefaults(['directory'], {
+    staleTime: 10 * 60_000,
+    gcTime: 30 * 60_000,
+  })
+  queryClient.setQueryDefaults(['notifications'], {
+    staleTime: 20_000,
+    gcTime: 5 * 60_000,
+  })
 
   return (
     <QueryClientProvider client={queryClient}>
