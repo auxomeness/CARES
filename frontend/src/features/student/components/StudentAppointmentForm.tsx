@@ -71,6 +71,13 @@ export function StudentAppointmentForm() {
     setTargetId('')
   }
 
+  const selectedOption = options.find((option) => option.id === selectedTargetId)
+  const selectedTargetLabel = selectedOption
+    ? 'user' in selectedOption
+      ? `${selectedOption.user?.firstName ?? ''} ${selectedOption.user?.lastName ?? ''}`.trim()
+      : selectedOption.name
+    : 'Not selected'
+
   const submit = async (event: FormEvent) => {
     event.preventDefault()
     setIsSubmitting(true)
@@ -198,11 +205,7 @@ export function StudentAppointmentForm() {
             <div className="rounded-[5px] bg-white/65 px-3 py-2">
               <dt className="font-semibold text-[#1b3a6b]">Target</dt>
               <dd className="m-0">
-                {options.find((option) => option.id === targetId)
-                  ? 'user' in options.find((option) => option.id === targetId)!
-                    ? `${(options.find((option) => option.id === targetId) as FacultyRecord).user?.firstName ?? ''} ${(options.find((option) => option.id === targetId) as FacultyRecord).user?.lastName ?? ''}`.trim()
-                    : (options.find((option) => option.id === targetId) as DirectoryRecord).name
-                  : 'Not selected'}
+                {selectedTargetLabel}
               </dd>
             </div>
             <div className="rounded-[5px] bg-white/65 px-3 py-2">

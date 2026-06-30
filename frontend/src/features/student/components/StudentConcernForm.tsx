@@ -1,5 +1,6 @@
 import { ImagePlus, Lock, Save, Send, XCircle } from 'lucide-react'
-import { type FormEvent, useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { type FormEvent, useState } from 'react'
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader'
 import { getApiErrorMessage } from '@/lib/api'
 import { directoryApi } from '@/services/caresApi'
@@ -92,10 +93,12 @@ export function StudentConcernForm() {
                 Target
                 <select
                   className="h-11 rounded-[5px] border border-[#7fa8de] bg-white px-3"
+                  disabled={isLoadingTargets}
                   onChange={(event) => setTargetId(event.target.value)}
                   required
-                  value={targetId}
+                  value={selectedTargetId}
                 >
+                  {isLoadingTargets ? <option value="">Loading targets...</option> : null}
                   {targets.map((target) => (
                     <option key={target.id} value={target.id}>
                       {target.name}
@@ -186,13 +189,21 @@ export function StudentConcernForm() {
             </button>
             <button
               className="inline-flex h-11 items-center justify-center gap-2 rounded-[5px] bg-[#1b3a6b] px-5 text-sm font-semibold !text-white disabled:opacity-60"
-              disabled={isSubmitting || !targetId}
+              disabled={isSubmitting || !selectedTargetId}
               type="submit"
             >
               <Send size={16} />
               {isSubmitting ? 'Submitting...' : 'Submit Concern'}
             </button>
           </div>
+          {isSubmitting && image ? (
+            <div className="h-2 overflow-hidden rounded-full bg-[#d9d9d9]" aria-label="Upload progress">
+              <span
+                className="block h-full rounded-full bg-[#1b3a6b] transition-all duration-300"
+                style={{ width: `${uploadProgress}%` }}
+              />
+            </div>
+          ) : null}
         </div>
 
         <aside className="rounded-[5px] border border-[#1b3a6b] bg-[#f5d788] p-5 shadow-[3px_3px_2.5px_1px_#1b3a6b] xl:sticky xl:top-8">
@@ -204,7 +215,9 @@ export function StudentConcernForm() {
             </div>
             <div className="rounded-[5px] bg-white/65 px-3 py-2">
               <dt className="font-semibold text-[#1b3a6b]">Target</dt>
-              <dd className="m-0">{targets.find((target) => target.id === targetId)?.name ?? 'Not selected'}</dd>
+              <dd className="m-0">
+                {targets.find((target) => target.id === selectedTargetId)?.name ?? 'Not selected'}
+              </dd>
             </div>
             <div className="rounded-[5px] bg-white/65 px-3 py-2">
               <dt className="font-semibold text-[#1b3a6b]">Title</dt>
