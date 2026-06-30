@@ -59,18 +59,20 @@ function FeedDetailCard({ concern, onClose }: { concern: StudentConcern; onClose
 export function StudentFeed() {
   const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
+  const debouncedSearch = useDebouncedValue(search.trim())
   const [error, setError] = useState('')
   const [visibleCount, setVisibleCount] = useState(10)
   const [selectedConcern, setSelectedConcern] = useState<StudentConcern | null>(null)
   const loadMoreRef = useRef<HTMLDivElement | null>(null)
   const feed = useQuery({
-    queryKey: ['concerns', 'public', search],
+    queryKey: ['concerns', 'public', debouncedSearch],
     queryFn: () =>
       concernApi.publicFeed({
         page: 1,
         limit: 50,
-        ...(search.trim() ? { search: search.trim() } : {}),
+        ...(debouncedSearch ? { search: debouncedSearch } : {}),
       }),
+    staleTime: 30_000,
   })
   const concerns = useMemo(
     () =>

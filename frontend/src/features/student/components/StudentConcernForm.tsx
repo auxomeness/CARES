@@ -2,7 +2,6 @@ import { ImagePlus, Lock, Save, Send, XCircle } from 'lucide-react'
 import { type FormEvent, useEffect, useState } from 'react'
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader'
 import { getApiErrorMessage } from '@/lib/api'
-import type { DirectoryRecord } from '@/lib/apiTypes'
 import { directoryApi } from '@/services/caresApi'
 import { useStudentData } from '../context/studentDataStore'
 import { StudentWorkspaceShell } from './StudentWorkspaceShell'
@@ -10,8 +9,6 @@ import { StudentWorkspaceShell } from './StudentWorkspaceShell'
 export function StudentConcernForm() {
   const { addConcern } = useStudentData()
   const [targetType, setTargetType] = useState<'OFFICE' | 'DEPARTMENT'>('OFFICE')
-  const [offices, setOffices] = useState<DirectoryRecord[]>([])
-  const [departments, setDepartments] = useState<DirectoryRecord[]>([])
   const [targetId, setTargetId] = useState('')
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -19,38 +16,45 @@ export function StudentConcernForm() {
   const [image, setImage] = useState<File | null>(null)
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
 
-  useEffect(() => {
-    void Promise.all([
-      directoryApi.offices({ page: 1, limit: 100 }),
-      directoryApi.departments({ page: 1, limit: 100 }),
-    ])
-      .then(([officeResult, departmentResult]) => {
-        setOffices(officeResult.data)
-        setDepartments(departmentResult.data)
-        setTargetId(officeResult.data[0]?.id ?? '')
-      })
-      .catch((loadError) => setError(getApiErrorMessage(loadError)))
-  }, [])
+  const officesQuery = useQuery({
+    queryKey: ['directory', 'office', 'form'],
+    queryFn: () => directoryApi.offices({ page: 1, limit: 100 }),
+    staleTime: 10 * 60_000,
+  })
+  const departmentsQuery = useQuery({
+    queryKey: ['directory', 'department', 'form'],
+    queryFn: () => directoryApi.departments({ page: 1, limit: 100 }),
+    staleTime: 10 * 60_000,
+  })
+  const offices = officesQuery.data?.data ?? []
+  const departments = departmentsQuery.data?.data ?? []
+  const targets = targetType === 'OFFICE' ? offices : departments
+  const selectedTargetId = targets.some((target) => target.id === targetId)
+    ? targetId
+    : targets[0]?.id ?? ''
 
   const changeTargetType = (next: 'OFFICE' | 'DEPARTMENT') => {
     setTargetType(next)
-    setTargetId((next === 'OFFICE' ? offices : departments)[0]?.id ?? '')
+    setTargetId('')
   }
 
   const submit = async (event: FormEvent) => {
     event.preventDefault()
     setIsSubmitting(true)
     setError('')
+    setUploadProgress(0)
     try {
       await addConcern({
         title,
         description,
         visibility,
         targetType,
-        targetOfficeId: targetType === 'OFFICE' ? targetId : null,
-        targetDepartmentId: targetType === 'DEPARTMENT' ? targetId : null,
+        targetOfficeId: targetType === 'OFFICE' ? selectedTargetId : null,
+        targetDepartmentId: targetType === 'DEPARTMENT' ? selectedTargetId : null,
         image,
+        onUploadProgress: setUploadProgress,
       })
       window.location.hash = '#student-concerns'
     } catch (submitError) {
@@ -60,7 +64,7 @@ export function StudentConcernForm() {
     }
   }
 
-  const targets = targetType === 'OFFICE' ? offices : departments
+  const isLoadingTargets = officesQuery.isLoading || departmentsQuery.isLoading
 
   return (
     <StudentWorkspaceShell activeSection="concerns" contentClassName="max-w-none">

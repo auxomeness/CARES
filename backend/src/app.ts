@@ -8,6 +8,7 @@ import { corsOrigins } from "./config/env";
 import { authRoutes } from "./modules/auth/auth.routes";
 import { appointmentRoutes } from "./modules/appointments/routes/appointment.routes";
 import { availabilityRoutes } from "./modules/appointments/routes/availability.routes";
+import { bootstrapRoutes } from "./modules/bootstrap";
 import { concernRoutes } from "./modules/concerns/routes/concern.routes";
 import { departmentRoutes } from "./modules/departments/routes/department.routes";
 import { directoryRoutes } from "./modules/directory/routes/directory.routes";
@@ -67,6 +68,8 @@ app.get("/metrics", metricsAuth, async (_req, res) => {
 
 app.use("/auth", authRoutes);
 app.use("/api/v1/auth", authRoutes);
+app.use("/bootstrap", bootstrapRoutes);
+app.use("/api/v1/bootstrap", bootstrapRoutes);
 app.use("/users", userRoutes);
 app.use("/api/v1/users", userRoutes);
 app.use("/offices", officeRoutes);

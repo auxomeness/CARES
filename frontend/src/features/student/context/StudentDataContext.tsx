@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { type ReactNode, useCallback, useMemo } from 'react'
 import { getApiErrorMessage } from '@/lib/api'
 import { useAuth } from '@/features/auth/AuthContext'
-import type { AppointmentRecord, ConcernRecord } from '@/lib/apiTypes'
+import type { AppointmentRecord, ConcernRecord, PaginatedEnvelope } from '@/lib/apiTypes'
 import { appointmentApi, concernApi } from '@/services/caresApi'
 import type {
   AppointmentInput,
@@ -103,20 +103,32 @@ export function StudentDataProvider({ children }: { children: ReactNode }) {
     queryKey: ['concerns', 'mine'],
     queryFn: () => concernApi.list({ page: 1, limit: 100 }),
     retry: false,
+    staleTime: 30_000,
     enabled,
   })
   const appointmentsQuery = useQuery({
     queryKey: ['appointments', 'mine'],
     queryFn: () => appointmentApi.list({ page: 1, limit: 100 }),
     retry: false,
+    staleTime: 30_000,
     enabled,
   })
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (targets: Array<'concerns' | 'appointments' | 'notifications'> = [
+    'concerns',
+    'appointments',
+    'notifications',
+  ]) => {
     await Promise.all([
-      queryClient.invalidateQueries({ queryKey: ['concerns'] }),
-      queryClient.invalidateQueries({ queryKey: ['appointments'] }),
-      queryClient.invalidateQueries({ queryKey: ['notifications'] }),
+      targets.includes('concerns')
+        ? queryClient.invalidateQueries({ queryKey: ['concerns'] })
+        : Promise.resolve(),
+      targets.includes('appointments')
+        ? queryClient.invalidateQueries({ queryKey: ['appointments'] })
+        : Promise.resolve(),
+      targets.includes('notifications')
+        ? queryClient.invalidateQueries({ queryKey: ['notifications'] })
+        : Promise.resolve(),
     ])
   }, [queryClient])
 
@@ -139,8 +151,17 @@ export function StudentDataProvider({ children }: { children: ReactNode }) {
           targetOfficeId: input.targetOfficeId ?? null,
           targetDepartmentId: input.targetDepartmentId ?? null,
         })
-        if (input.image) await concernApi.upload(concern.id, input.image)
-        await refresh()
+        queryClient.setQueryData<PaginatedEnvelope<ConcernRecord>>(['concerns', 'mine'], (old) =>
+          old
+            ? {
+                ...old,
+                data: [concern, ...old.data.filter((item) => item.id !== concern.id)],
+                meta: { ...old.meta, total: old.meta.total + 1 },
+              }
+            : old,
+        )
+        if (input.image) await concernApi.upload(concern.id, input.image, input.onUploadProgress)
+        await refresh(['concerns', 'notifications'])
       },
       updateConcern: async () => {
         throw new Error('Submitted concerns are immutable. Use resolution actions to update state.')
@@ -153,10 +174,10 @@ export function StudentDataProvider({ children }: { children: ReactNode }) {
           (concern) => concern.id === id || concern.referenceNumber === id,
         )
         await concernApi.support(record?.id ?? id)
-        await refresh()
+        await refresh(['concerns', 'notifications'])
       },
       addAppointment: async (input: AppointmentInput) => {
-        await appointmentApi.create({
+        const appointment = await appointmentApi.create({
           title: input.purpose,
           description: input.description,
           targetType: input.targetType,
@@ -166,7 +187,18 @@ export function StudentDataProvider({ children }: { children: ReactNode }) {
           startTime: input.startTime,
           endTime: input.endTime,
         })
-        await refresh()
+        queryClient.setQueryData<PaginatedEnvelope<AppointmentRecord>>(
+          ['appointments', 'mine'],
+          (old) =>
+            old
+              ? {
+                  ...old,
+                  data: [appointment, ...old.data.filter((item) => item.id !== appointment.id)],
+                  meta: { ...old.meta, total: old.meta.total + 1 },
+                }
+              : old,
+        )
+        await refresh(['appointments', 'notifications'])
       },
       updateAppointment: async (id: string, input: AppointmentInput) => {
         if (!input.startTime || !input.endTime) throw new Error('Choose a new schedule.')
@@ -175,15 +207,15 @@ export function StudentDataProvider({ children }: { children: ReactNode }) {
           newEndTime: input.endTime,
           reason: 'Student requested a new schedule',
         })
-        await refresh()
+        await refresh(['appointments', 'notifications'])
       },
       deleteAppointment: async (id: string) => {
         await appointmentApi.cancel(id)
-        await refresh()
+        await refresh(['appointments', 'notifications'])
       },
       refresh,
     }),
-    [appointmentsQuery, concernsQuery, refresh],
+    [appointmentsQuery, concernsQuery, queryClient, refresh],
   )
 
   return <StudentDataContext.Provider value={value}>{children}</StudentDataContext.Provider>

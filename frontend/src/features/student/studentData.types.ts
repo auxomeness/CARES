@@ -35,6 +35,7 @@ export type ConcernInput = {
   targetOfficeId?: string | null
   targetDepartmentId?: string | null
   image?: File | null
+  onUploadProgress?: (percent: number) => void
 }
 
 export type AppointmentMode = 'office' | 'department'

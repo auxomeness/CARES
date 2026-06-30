@@ -34,10 +34,17 @@ export const concernApi = {
     (await api.get<ApiEnvelope<{ concern: ConcernRecord }>>(`/concerns/${id}`)).data.data.concern,
   create: async (input: object) =>
     (await api.post<ApiEnvelope<{ concern: ConcernRecord }>>('/concerns', input)).data.data.concern,
-  upload: async (id: string, image: File) => {
+  upload: async (id: string, image: File, onUploadProgress?: (percent: number) => void) => {
     const body = new FormData()
     body.append('image', image)
-    return (await api.post(`/concerns/${id}/attachments`, body)).data
+    return (
+      await api.post(`/concerns/${id}/attachments`, body, {
+        onUploadProgress: (event) => {
+          if (!event.total || !onUploadProgress) return
+          onUploadProgress(Math.round((event.loaded / event.total) * 100))
+        },
+      })
+    ).data
   },
   support: (id: string) => api.post(`/concerns/${id}/support`),
   status: (id: string, status: string) => api.patch(`/concerns/${id}/status`, { status }),

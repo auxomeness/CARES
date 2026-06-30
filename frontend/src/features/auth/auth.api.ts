@@ -1,5 +1,5 @@
 import { api } from '@/lib/api'
-import type { ApiEnvelope, DirectoryRecord, UserProfile } from '@/lib/apiTypes'
+import type { ApiEnvelope, BootstrapPayload, DirectoryRecord, UserProfile } from '@/lib/apiTypes'
 
 export type LoginInput = { email: string; password: string }
 
@@ -13,7 +13,7 @@ export type RegisterInput = LoginInput & {
   departmentId: string
 }
 
-type AuthResult = { accessToken: string; user: UserProfile }
+export type AuthResult = { accessToken: string; user: UserProfile; bootstrap?: BootstrapPayload }
 
 export const authApi = {
   async login(input: LoginInput) {
@@ -27,6 +27,10 @@ export const authApi = {
   async me() {
     const response = await api.get<ApiEnvelope<{ user: UserProfile }>>('/users/me')
     return response.data.data.user
+  },
+  async bootstrap() {
+    const response = await api.get<ApiEnvelope<BootstrapPayload>>('/bootstrap')
+    return response.data.data
   },
   async updateProfile(input: Partial<RegisterInput>) {
     const response = await api.put<ApiEnvelope<{ user: UserProfile }>>('/users/me', input)

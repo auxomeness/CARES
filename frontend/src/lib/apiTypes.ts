@@ -13,6 +13,24 @@ export type PaginatedEnvelope<T> = {
   meta: { page: number; limit: number; total: number; unread?: number }
 }
 
+export type BootstrapPage<T> = {
+  data: T[]
+  meta: { page: number; limit: number; total: number; unread?: number }
+}
+
+export type BootstrapPayload = {
+  user: UserProfile
+  notifications?: BootstrapPage<NotificationRecord>
+  concerns?: BootstrapPage<ConcernRecord>
+  publicConcerns?: BootstrapPage<ConcernRecord>
+  appointments?: BootstrapPage<AppointmentRecord>
+  directory?: {
+    offices?: BootstrapPage<DirectoryRecord>
+    departments?: BootstrapPage<DirectoryRecord>
+    faculty?: BootstrapPage<FacultyRecord>
+  }
+}
+
 export type UserProfile = {
   id: string
   email: string
