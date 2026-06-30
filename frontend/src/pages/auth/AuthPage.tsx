@@ -8,7 +8,7 @@ export function AuthPage() {
   const currentMode = authModes[mode]
 
   return (
-    <main className="min-h-svh overflow-hidden bg-[#1b3a6b] text-black lg:grid lg:grid-cols-[minmax(420px,1fr)_minmax(500px,1fr)] lg:bg-[#f2f2f2]">
+    <main className="min-h-svh overflow-x-hidden bg-[#1b3a6b] text-black lg:grid lg:grid-cols-[minmax(420px,1fr)_minmax(500px,1fr)] lg:overflow-hidden lg:bg-[#f2f2f2]">
       <BrandPanel />
       <AuthPanel config={currentMode} mode={mode} onModeChange={setAuthMode} />
     </main>

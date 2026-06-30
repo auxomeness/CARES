@@ -13,7 +13,28 @@ export function StudentAppointments() {
   const [actionError, setActionError] = useState('')
   const [newStartTime, setNewStartTime] = useState('')
   const [newEndTime, setNewEndTime] = useState('')
+  const [currentTime] = useState(() => Date.now())
   const selected = appointments.find((item) => item.id === selectedId) ?? appointments[0] ?? null
+  const nextAppointment = [...appointments]
+    .filter((appointment) => new Date(appointment.createdAt).getTime() >= currentTime)
+    .sort((left, right) => new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime())[0]
+  const stats = [
+    { label: 'Total Appointments', value: String(appointments.length) },
+    {
+      label: 'Pending Approval',
+      value: String(appointments.filter((appointment) => appointment.status === 'Pending').length),
+    },
+    {
+      label: 'Active Appointments',
+      value: String(
+        appointments.filter((appointment) => ['Pending', 'Approved'].includes(appointment.status)).length,
+      ),
+    },
+    {
+      label: 'Next Appointment',
+      value: nextAppointment ? `${nextAppointment.date} - ${nextAppointment.id}` : 'None',
+    },
+  ]
 
   const cancel = async () => {
     if (!selected) return
@@ -55,10 +76,27 @@ export function StudentAppointments() {
     <StudentWorkspaceShell activeSection="appointments" contentClassName="max-w-none">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <DashboardHeader title="My Appointments" subtitle="Review appointment requests and their current status." />
-        <LoadingLink className="inline-flex h-10 w-full shrink-0 items-center justify-center gap-2 rounded bg-[#1b3a6b] px-4 text-sm font-semibold text-white no-underline sm:w-auto" href="#student-appointment-new">
+        <LoadingLink className="inline-flex h-10 w-full shrink-0 items-center justify-center gap-2 rounded bg-[#1b3a6b] px-4 text-sm font-semibold !text-white no-underline sm:w-auto" href="#student-appointment-new">
           <Plus size={16} /> New Appointment
         </LoadingLink>
       </div>
+      <section className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Appointment statistics">
+        {stats.map((stat) => (
+          <article
+            className="min-h-[86px] rounded-[5px] border border-[#295498]/70 bg-white px-4 py-3 shadow-[3px_3px_2.5px_1px_#1b3a6b]"
+            key={stat.label}
+          >
+            <p className="m-0 text-[10px] font-semibold text-[#707070]">{stat.label}</p>
+            <p
+              className={`m-0 mt-2 font-bold leading-tight text-[#1b3a6b] ${
+                stat.label === 'Next Appointment' ? 'text-[15px]' : 'text-[24px]'
+              }`}
+            >
+              {stat.value}
+            </p>
+          </article>
+        ))}
+      </section>
       {isLoading ? <p className="mt-8 text-sm">Loading appointments...</p> : null}
       {error || actionError ? <p className="mt-6 rounded bg-red-50 p-3 text-sm text-red-700">{error || actionError}</p> : null}
       <div className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1fr)_390px]">

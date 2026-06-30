@@ -98,18 +98,18 @@ export function StudentAppointmentForm() {
   }
 
   return (
-    <StudentWorkspaceShell activeSection="appointments" contentClassName="max-w-[820px]">
+    <StudentWorkspaceShell activeSection="appointments" contentClassName="max-w-none">
       <DashboardHeader
         title="Set an Appointment"
         subtitle="Select an office, department, or professor and request an available schedule."
       />
-      <form className="mt-8 grid gap-5" onSubmit={submit}>
+      <form className="mt-8 grid gap-5 xl:grid-cols-[minmax(0,1fr)_330px] xl:items-start" onSubmit={submit}>
         <section className="grid gap-4 rounded-[5px] border border-[#295498]/70 bg-white p-5 shadow-[3px_3px_2.5px_1px_#1b3a6b]">
           <div className="grid gap-3 sm:grid-cols-3">
             {(['OFFICE', 'DEPARTMENT', 'PROFESSOR'] as const).map((type) => (
               <button
                 className={`h-11 rounded border text-sm font-semibold ${
-                  targetType === type ? 'bg-[#1b3a6b] text-white' : 'text-[#1b3a6b]'
+                  targetType === type ? 'bg-[#1b3a6b] !text-white' : 'text-[#1b3a6b]'
                 }`}
                 key={type}
                 onClick={() => chooseType(type)}
@@ -180,10 +180,50 @@ export function StudentAppointmentForm() {
           </div>
         </section>
         {error ? <p className="rounded bg-red-50 p-3 text-sm text-red-700">{error}</p> : null}
-        <button className="inline-flex h-11 items-center justify-center gap-2 rounded bg-[#1b3a6b] text-sm font-semibold text-white disabled:opacity-60" disabled={isSubmitting || !targetId} type="submit">
-          {isSubmitting ? <CalendarDays className="animate-pulse" size={16} /> : <Send size={16} />}
-          {isSubmitting ? 'Booking...' : 'Book Appointment'}
-        </button>
+        <aside className="rounded-[5px] border border-[#1b3a6b] bg-[#f5d788] p-5 shadow-[3px_3px_2.5px_1px_#1b3a6b] xl:sticky xl:top-8">
+          <h2 className="m-0 text-[17px] font-semibold text-[#1b3a6b]">Appointment Summary</h2>
+          <dl className="mt-4 grid gap-3 text-[12px]">
+            <div className="rounded-[5px] bg-white/65 px-3 py-2">
+              <dt className="font-semibold text-[#1b3a6b]">Type</dt>
+              <dd className="m-0">{targetType[0] + targetType.slice(1).toLowerCase()}</dd>
+            </div>
+            <div className="rounded-[5px] bg-white/65 px-3 py-2">
+              <dt className="font-semibold text-[#1b3a6b]">Target</dt>
+              <dd className="m-0">
+                {options.find((option) => option.id === targetId)
+                  ? 'user' in options.find((option) => option.id === targetId)!
+                    ? `${(options.find((option) => option.id === targetId) as FacultyRecord).user?.firstName ?? ''} ${(options.find((option) => option.id === targetId) as FacultyRecord).user?.lastName ?? ''}`.trim()
+                    : (options.find((option) => option.id === targetId) as DirectoryRecord).name
+                  : 'Not selected'}
+              </dd>
+            </div>
+            <div className="rounded-[5px] bg-white/65 px-3 py-2">
+              <dt className="font-semibold text-[#1b3a6b]">Date</dt>
+              <dd className="m-0">{startTime ? new Date(startTime).toLocaleDateString() : 'Not selected'}</dd>
+            </div>
+            <div className="rounded-[5px] bg-white/65 px-3 py-2">
+              <dt className="font-semibold text-[#1b3a6b]">Time</dt>
+              <dd className="m-0">{startTime ? new Date(startTime).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : 'Not selected'}</dd>
+            </div>
+            <div className="rounded-[5px] bg-white/65 px-3 py-2">
+              <dt className="font-semibold text-[#1b3a6b]">Purpose</dt>
+              <dd className="m-0">{title || 'Not provided'}</dd>
+            </div>
+          </dl>
+          <button className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded bg-[#1b3a6b] text-sm font-semibold !text-white disabled:opacity-60" disabled={isSubmitting || !targetId} type="submit">
+            {isSubmitting ? <CalendarDays className="animate-pulse" size={16} /> : <Send size={16} />}
+            {isSubmitting ? 'Booking...' : 'Book Appointment'}
+          </button>
+          <button
+            className="mt-3 inline-flex h-11 w-full items-center justify-center rounded border border-[#1b3a6b] bg-white text-sm font-semibold text-[#1b3a6b]"
+            onClick={() => {
+              window.location.hash = '#student-appointments'
+            }}
+            type="button"
+          >
+            Cancel
+          </button>
+        </aside>
       </form>
     </StudentWorkspaceShell>
   )

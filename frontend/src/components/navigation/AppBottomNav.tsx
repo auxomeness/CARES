@@ -60,7 +60,7 @@ export function AppBottomNav({ items }: AppBottomNavProps) {
           return (
             <a
               aria-current={item.active ? 'page' : undefined}
-              className="group grid justify-items-center gap-1 text-[6px] font-bold leading-none text-white no-underline transition duration-200 hover:-translate-y-0.5 active:scale-95"
+              className="group grid min-w-0 justify-items-center gap-1 text-[8px] font-semibold leading-none text-white no-underline transition duration-200 hover:-translate-y-0.5 active:scale-95 sm:text-[9px]"
               href={item.href}
               key={item.label}
               onClick={(event) => {
@@ -82,7 +82,7 @@ export function AppBottomNav({ items }: AppBottomNavProps) {
               >
                 <Icon aria-hidden="true" size={24} strokeWidth={2} />
               </span>
-              <span className="text-white">{item.label}</span>
+              <span className="max-w-full truncate text-white">{item.label}</span>
             </a>
           )
         })}

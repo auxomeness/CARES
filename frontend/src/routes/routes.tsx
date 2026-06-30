@@ -4,6 +4,7 @@ import {
   AdminDepartmentsPage,
   AdminFacultyPage,
   AdminOfficesPage,
+  AdminProfilePage,
   AdminStudentsPage,
 } from '../pages/admin'
 import { AuthPage } from '../pages/auth'
@@ -12,17 +13,20 @@ import {
   DepartmentConcernsPage,
   DepartmentDashboardPage,
   DepartmentDirectoryPage,
+  DepartmentProfilePage,
   DepartmentReportsPage,
 } from '../pages/department'
 import {
   FacultyAppointmentsPage,
   FacultyDashboardPage,
+  FacultyProfilePage,
   FacultyReportsPage,
 } from '../pages/faculty'
 import {
   OfficeAppointmentsPage,
   OfficeConcernsPage,
   OfficeDashboardPage,
+  OfficeProfilePage,
   OfficeReportsPage,
 } from '../pages/office'
 import { OfficeHeadDashboardPage } from '../pages/office_head'
@@ -35,6 +39,7 @@ import {
   StudentDirectoriesPage,
   StudentDirectoryDetailPage,
   StudentFeedPage,
+  StudentProfilePage,
 } from '../pages/student'
 
 export type AppRouteId =
@@ -51,24 +56,29 @@ export type AppRouteId =
   | 'student_directories_department'
   | 'student_directories_faculty'
   | 'student_directory_detail'
+  | 'student_profile'
   | 'office'
   | 'office_concerns'
   | 'office_appointments'
   | 'office_reports'
+  | 'office_profile'
   | 'department'
   | 'department_concerns'
   | 'department_appointments'
   | 'department_reports'
   | 'department_directory'
+  | 'department_profile'
   | 'faculty'
   | 'faculty_appointments'
   | 'faculty_reports'
+  | 'faculty_profile'
   | 'office_head'
   | 'admin'
   | 'admin_offices'
   | 'admin_departments'
   | 'admin_faculty'
   | 'admin_students'
+  | 'admin_profile'
 
 export type AppRoute = {
   id: AppRouteId
@@ -100,8 +110,15 @@ export const appRoutes: AppRoute[] = [
     label: 'Student Home',
     path: '/student',
     hash: '#student',
-    aliases: ['#home', '#student-home', '#student-profile'],
+    aliases: ['#home', '#student-home'],
     element: <StudentDashboardPage />,
+  },
+  {
+    id: 'student_profile',
+    label: 'Student Profile',
+    path: '/student/profile',
+    hash: '#student-profile',
+    element: <StudentProfilePage />,
   },
   {
     id: 'student_feed',
@@ -207,6 +224,13 @@ export const appRoutes: AppRoute[] = [
     element: <OfficeReportsPage />,
   },
   {
+    id: 'office_profile',
+    label: 'Office Profile',
+    path: '/office/profile',
+    hash: '#office-profile',
+    element: <OfficeProfilePage />,
+  },
+  {
     id: 'department',
     label: 'Department',
     path: '/department',
@@ -242,6 +266,13 @@ export const appRoutes: AppRoute[] = [
     element: <DepartmentDirectoryPage />,
   },
   {
+    id: 'department_profile',
+    label: 'Department Profile',
+    path: '/department/profile',
+    hash: '#department-profile',
+    element: <DepartmentProfilePage />,
+  },
+  {
     id: 'faculty',
     label: 'Faculty',
     path: '/faculty',
@@ -261,6 +292,13 @@ export const appRoutes: AppRoute[] = [
     path: '/faculty/reports',
     hash: '#faculty-reports',
     element: <FacultyReportsPage />,
+  },
+  {
+    id: 'faculty_profile',
+    label: 'Faculty Profile',
+    path: '/faculty/profile',
+    hash: '#faculty-profile',
+    element: <FacultyProfilePage />,
   },
   {
     id: 'office_head',
@@ -304,6 +342,13 @@ export const appRoutes: AppRoute[] = [
     path: '/admin/students',
     hash: '#admin-students',
     element: <AdminStudentsPage />,
+  },
+  {
+    id: 'admin_profile',
+    label: 'Admin Profile',
+    path: '/admin/profile',
+    hash: '#admin-profile',
+    element: <AdminProfilePage />,
   },
 ]
 

@@ -1,4 +1,4 @@
-import { CheckCircle2, FileText, RotateCcw } from 'lucide-react'
+import { CheckCircle2, FileText, Paperclip, RotateCcw } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader'
@@ -15,6 +15,12 @@ export function StudentConcerns() {
   const [feedback, setFeedback] = useState('')
   const [actionError, setActionError] = useState('')
   const selected = concerns.find((item) => item.apiId === selectedId) ?? concerns[0] ?? null
+  const stats = [
+    { label: 'Total Concerns Submitted', value: concerns.length },
+    { label: 'Active Concerns', value: concerns.filter((item) => item.status !== 'Completed').length },
+    { label: 'For Verification', value: concerns.filter((item) => item.status === 'Approved').length },
+    { label: 'Resolved', value: concerns.filter((item) => item.status === 'Completed').length },
+  ]
   const detailQuery = useQuery({
     queryKey: ['concern', selected?.apiId],
     queryFn: () => concernApi.detail(selected!.apiId!),
@@ -37,12 +43,23 @@ export function StudentConcerns() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <DashboardHeader title="My Concerns" subtitle="Track status, evidence, and resolution history." />
         <LoadingLink
-          className="inline-flex h-10 w-full shrink-0 items-center justify-center gap-2 rounded-[5px] bg-[#1b3a6b] px-4 text-sm font-semibold text-white no-underline sm:w-auto"
+          className="inline-flex h-10 w-full shrink-0 items-center justify-center gap-2 rounded-[5px] bg-[#1b3a6b] px-4 text-sm font-semibold !text-white no-underline sm:w-auto"
           href="#student-concern-new"
         >
           <FileText size={16} /> Add Concern
         </LoadingLink>
       </div>
+      <section className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Concern statistics">
+        {stats.map((stat) => (
+          <article
+            className="rounded-[5px] border border-[#295498]/70 bg-white px-4 py-3 shadow-[3px_3px_2.5px_1px_#1b3a6b]"
+            key={stat.label}
+          >
+            <p className="m-0 text-[10px] font-semibold text-[#707070]">{stat.label}</p>
+            <p className="m-0 mt-2 text-[22px] font-bold leading-none text-[#1b3a6b]">{stat.value}</p>
+          </article>
+        ))}
+      </section>
       {isLoading ? <p className="mt-8 text-sm">Loading concerns...</p> : null}
       {error || actionError ? (
         <p className="mt-6 rounded bg-red-50 px-3 py-2 text-sm text-red-700">{error || actionError}</p>
@@ -68,6 +85,12 @@ export function StudentConcerns() {
                 </span>
               </div>
               <p className="mt-3 text-sm text-[#434343]">{concern.description}</p>
+              {(concern.detail?._count?.attachments ?? 0) > 0 ? (
+                <span className="mt-3 inline-flex items-center gap-1 rounded-full bg-[#edf4ff] px-3 py-1 text-[11px] font-semibold text-[#1b3a6b]">
+                  <Paperclip aria-hidden="true" size={13} />
+                  Attachment included
+                </span>
+              ) : null}
             </button>
           ))}
           {!isLoading && concerns.length === 0 ? (
@@ -131,8 +154,11 @@ export function StudentConcerns() {
                 </div>
               ) : null}
               {detail?.attachments?.length ? (
-                <div className="mt-6">
-                  <h3 className="text-sm font-semibold">Attachments</h3>
+                <div className="mt-6 rounded-[5px] border border-dashed border-[#7fa8de] bg-[#edf4ff] px-4 py-4">
+                  <h3 className="inline-flex items-center gap-2 text-sm font-semibold text-[#1b3a6b]">
+                    <Paperclip aria-hidden="true" size={16} />
+                    Attachments
+                  </h3>
                   <ul className="mt-3 grid gap-2 text-xs">
                     {detail.attachments.map((attachment) => (
                       <li key={attachment.id}>

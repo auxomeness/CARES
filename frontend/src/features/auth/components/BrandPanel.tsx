@@ -1,31 +1,7 @@
-import { useEffect, useState } from 'react'
-import { authBrandMessages, progressSteps } from '../auth.config'
+import { progressSteps } from '../auth.config'
+import { AuthTypewriter } from './AuthTypewriter'
 
 export function BrandPanel() {
-  const [messageIndex, setMessageIndex] = useState(0)
-  const [typedText, setTypedText] = useState('')
-
-  useEffect(() => {
-    const message = authBrandMessages[messageIndex]
-    let characterIndex = 0
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setTypedText('')
-
-    const typingTimer = window.setInterval(() => {
-      characterIndex += 1
-      setTypedText(message.slice(0, characterIndex))
-
-      if (characterIndex >= message.length) {
-        window.clearInterval(typingTimer)
-        window.setTimeout(() => {
-          setMessageIndex((currentIndex) => (currentIndex + 1) % authBrandMessages.length)
-        }, 1200)
-      }
-    }, 42)
-
-    return () => window.clearInterval(typingTimer)
-  }, [messageIndex])
-
   return (
     <section
       className="relative hidden min-h-svh flex-col overflow-hidden bg-[#1b3a6b] pb-[62px] pl-[clamp(64px,7.7vw,98px)] pr-[8%] pt-[50px] text-[#f7f4ec] lg:flex"
@@ -49,10 +25,10 @@ export function BrandPanel() {
           Every concern, directed with ease.
         </h1>
 
-        <p className="m-0 mt-5 min-h-[24px] max-w-[405px] text-[18px] leading-snug text-[#f5d788]">
-          <span>{typedText}</span>
-          <span className="ml-1 inline-block h-[17px] w-px translate-y-0.5 animate-[caretBlink_700ms_steps(1)_infinite] bg-[#f5d788]" />
-        </p>
+        <AuthTypewriter
+          className="m-0 mt-5 min-h-[70px] max-w-[405px] text-[18px] leading-snug text-[#f5d788]"
+          cursorClassName="h-[17px] bg-[#f5d788]"
+        />
       </div>
 
       <ol

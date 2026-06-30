@@ -1,4 +1,5 @@
 export { OfficeDashboardPage } from './OfficeDashboardPage'
 export { OfficeAppointmentsPage } from './OfficeAppointmentsPage'
 export { OfficeConcernsPage } from './OfficeConcernsPage'
+export { OfficeProfilePage } from './OfficeProfilePage'
 export { OfficeReportsPage } from './OfficeReportsPage'

@@ -1,17 +1,19 @@
 import { ChevronUp, MapPin, Tag } from 'lucide-react'
-import { useState } from 'react'
+import { type MouseEvent, useState } from 'react'
 import type { StudentConcern } from '../studentData.types'
 import { getConcernStatusClass } from '../studentUi'
 
 type FeedConcernCardProps = {
   concern: StudentConcern
+  onSelect?: (concern: StudentConcern) => void
   onUp: (id: string) => Promise<void>
 }
 
-export function FeedConcernCard({ concern, onUp }: FeedConcernCardProps) {
+export function FeedConcernCard({ concern, onSelect, onUp }: FeedConcernCardProps) {
   const [isReacting, setIsReacting] = useState(false)
 
-  const handleUp = async () => {
+  const handleUp = async (event: MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation()
     setIsReacting(true)
     try {
       await onUp(concern.id)
@@ -21,9 +23,17 @@ export function FeedConcernCard({ concern, onUp }: FeedConcernCardProps) {
   }
 
   return (
-    <article className="relative min-h-[150px] rounded-[5px] border border-[#295498]/70 bg-white px-4 pb-14 pt-4 shadow-[3px_3px_2.5px_1px_#1b3a6b] transition duration-200 hover:-translate-y-0.5 hover:shadow-[4px_5px_4px_1px_#1b3a6b] active:scale-[0.995] sm:min-h-[132px] sm:pb-12">
+    <article
+      className="relative min-h-[118px] cursor-pointer rounded-[5px] border border-[#295498]/70 bg-white px-4 pb-14 pt-4 shadow-[3px_3px_2.5px_1px_#1b3a6b] transition duration-200 hover:-translate-y-0.5 hover:shadow-[4px_5px_4px_1px_#1b3a6b] active:scale-[0.995] sm:min-h-[132px] sm:pb-12"
+      onClick={() => onSelect?.(concern)}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') onSelect?.(concern)
+      }}
+      role={onSelect ? 'button' : undefined}
+      tabIndex={onSelect ? 0 : undefined}
+    >
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-2 text-[11px] font-medium text-[#1b3a6b]">
+        <div className="hidden flex-wrap items-center gap-2 text-[11px] font-medium text-[#1b3a6b] sm:flex">
           <span>{concern.id}</span>
           <span className="inline-flex items-center gap-1 text-[#707070]">
             <MapPin aria-hidden="true" size={12} />
@@ -44,10 +54,10 @@ export function FeedConcernCard({ concern, onUp }: FeedConcernCardProps) {
         </span>
       </div>
 
-      <h2 className="m-0 mt-3 text-[21px] font-semibold leading-tight text-[#101010] sm:text-[23px]">
+      <h2 className="m-0 mt-3 text-[18px] font-semibold leading-tight text-[#101010] sm:text-[23px]">
         {concern.title}
       </h2>
-      <p className="m-0 mt-2 max-w-[510px] text-[13px] font-light leading-[1.35] text-[#101010]">
+      <p className="m-0 mt-2 hidden max-w-[610px] text-[13px] font-light leading-[1.35] text-[#101010] sm:block">
         {concern.description}
       </p>
 
@@ -61,7 +71,7 @@ export function FeedConcernCard({ concern, onUp }: FeedConcernCardProps) {
 
         <button
           className="inline-flex h-[30px] min-w-[58px] items-center justify-center gap-1.5 rounded-[5px] bg-[#1b3a6b] px-3 text-[12px] font-semibold !text-white transition duration-200 hover:bg-[#295498] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9fbef1] active:scale-95 sm:min-w-[86px]"
-          onClick={() => void handleUp()}
+          onClick={(event) => void handleUp(event)}
           type="button"
         >
           {isReacting ? (

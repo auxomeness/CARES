@@ -20,7 +20,7 @@ export function AuthPanel({ config, mode, onModeChange }: AuthPanelProps) {
       <MobileHero config={config} isRegister={isRegister} />
 
       <div
-        className={`relative box-border min-h-[calc(100svh-289px)] w-full rounded-t-[15px] bg-[#f7f4ec] px-[52px] pb-[76px] lg:min-h-0 lg:w-[445px] lg:rounded-none lg:bg-transparent lg:p-0 ${
+        className={`relative box-border min-h-[calc(100svh-289px)] w-full overflow-hidden rounded-t-[15px] bg-[#f7f4ec] px-[52px] pb-10 lg:min-h-0 lg:w-[445px] lg:rounded-none lg:bg-transparent lg:p-0 ${
           isRegister
             ? 'min-h-[calc(100svh-282px)] pt-16'
             : 'pt-[57px]'
@@ -28,27 +28,36 @@ export function AuthPanel({ config, mode, onModeChange }: AuthPanelProps) {
       >
         <AuthTabs mode={mode} onModeChange={onModeChange} />
 
-        <div className="mt-[35px] hidden lg:block">
-          <h2 className="m-0 text-[35px] font-semibold leading-[1.1] tracking-[1.4px] text-[#1b3a6b]">
-            {config.desktopTitle}
-          </h2>
-          <p className="m-0 mt-[9px] max-w-[445px] text-[18px] font-medium leading-[1.16] tracking-[1.08px] text-[#486b96]">
-            {config.desktopLead}
+        <div
+          className={
+            isRegister
+              ? 'animate-[authSwipeInFromRight_300ms_ease-out_both]'
+              : 'animate-[authSwipeInFromLeft_300ms_ease-out_both]'
+          }
+          key={mode}
+        >
+          <div className="mt-[35px] hidden lg:block">
+            <h2 className="m-0 text-[35px] font-semibold leading-[1.1] tracking-[1.4px] text-[#1b3a6b]">
+              {config.desktopTitle}
+            </h2>
+            <p className="m-0 mt-[9px] max-w-[445px] text-[18px] font-medium leading-[1.16] tracking-[1.08px] text-[#486b96]">
+              {config.desktopLead}
+            </p>
+          </div>
+
+          <AuthForm config={config} mode={mode} onModeChange={onModeChange} />
+
+          <div
+            className={`ml-[-13px] h-px w-[317px] max-w-[calc(100vw-78px)] bg-[#1b3a6b] lg:ml-[-3px] lg:w-[469px] lg:max-w-none ${
+              isRegister ? 'mt-[37px] lg:mt-11' : 'mt-[60px] lg:mt-11'
+            }`}
+            aria-hidden="true"
+          />
+
+          <p className="m-0 mt-5 text-center text-[10px] font-light leading-[1.2] tracking-[0.36px] text-[#1b3a6b] lg:hidden">
+            Centralized Ateneo Response and Engagement System
           </p>
         </div>
-
-        <AuthForm config={config} mode={mode} onModeChange={onModeChange} />
-
-        <div
-          className={`ml-[-13px] h-px w-[317px] max-w-[calc(100vw-78px)] bg-[#1b3a6b] lg:ml-[-3px] lg:w-[469px] lg:max-w-none ${
-            isRegister ? 'mt-[37px] lg:mt-11' : 'mt-[60px] lg:mt-11'
-          }`}
-          aria-hidden="true"
-        />
-
-        <p className="absolute bottom-[29px] left-5 right-5 m-0 text-center text-[12px] font-light leading-[1.15] tracking-[0.72px] text-[#1b3a6b] lg:hidden">
-          Centralized Ateneo Response and Engagement System
-        </p>
       </div>
     </section>
   )

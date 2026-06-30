@@ -14,6 +14,50 @@ type AuthFormProps = {
   onModeChange: (mode: AuthMode) => void
 }
 
+const yearLevelOptions = [
+  { label: '1st Year', value: '1' },
+  { label: '2nd Year', value: '2' },
+  { label: '3rd Year', value: '3' },
+  { label: '4th Year', value: '4' },
+  { label: '5th Year', value: '5' },
+]
+
+const departmentCourses: Array<{ match: string[]; courses: string[] }> = [
+  {
+    match: ['computer', 'information', 'technology'],
+    courses: ['BS Computer Science', 'BS Information Technology', 'BS Information Systems'],
+  },
+  {
+    match: ['engineering'],
+    courses: ['BS Civil Engineering', 'BS Computer Engineering', 'BS Electronics Engineering'],
+  },
+  {
+    match: ['business', 'accounting', 'management'],
+    courses: ['BS Accountancy', 'BS Business Administration', 'BS Management Accounting'],
+  },
+  {
+    match: ['education'],
+    courses: ['Bachelor of Elementary Education', 'BSEd English', 'BSEd Mathematics'],
+  },
+  {
+    match: ['arts', 'humanities', 'communication'],
+    courses: ['AB Communication', 'AB Philosophy', 'AB Psychology'],
+  },
+  {
+    match: ['science', 'biology', 'chemistry'],
+    courses: ['BS Biology', 'BS Chemistry', 'BS Environmental Science'],
+  },
+]
+
+function getCourseOptions(department?: DirectoryRecord) {
+  const departmentName = department?.name.toLowerCase() ?? ''
+  const matchedGroup = departmentCourses.find((group) =>
+    group.match.some((keyword) => departmentName.includes(keyword)),
+  )
+
+  return matchedGroup?.courses ?? ['General Studies']
+}
+
 export function AuthForm({ config, mode, onModeChange }: AuthFormProps) {
   const isRegister = mode === 'register'
   const switchLink = config.switchLink
@@ -22,15 +66,37 @@ export function AuthForm({ config, mode, onModeChange }: AuthFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [departments, setDepartments] = useState<DirectoryRecord[]>([])
   const { login, register } = useAuth()
+  const selectedDepartmentId = values.departmentId || departments[0]?.id || ''
+  const selectedDepartment = departments.find((department) => department.id === selectedDepartmentId)
+  const courseOptions = getCourseOptions(selectedDepartment)
 
   useEffect(() => {
     if (isRegister) {
-      void authApi.departments().then(setDepartments).catch(() => setDepartments([]))
+      void authApi
+        .departments()
+        .then((departmentResult) => {
+          setDepartments(departmentResult)
+          setValues((currentValues) => ({
+            ...currentValues,
+            departmentId: currentValues.departmentId || departmentResult[0]?.id || '',
+          }))
+        })
+        .catch(() => setDepartments([]))
     }
   }, [isRegister])
 
   const updateField = (id: string, value: string) => {
     setValues((currentValues) => ({ ...currentValues, [id]: value }))
+    setError('')
+  }
+
+  const updateDepartment = (departmentId: string) => {
+    const nextDepartment = departments.find((department) => department.id === departmentId)
+    setValues((currentValues) => ({
+      ...currentValues,
+      departmentId,
+      course: getCourseOptions(nextDepartment)[0] ?? '',
+    }))
     setError('')
   }
 
@@ -49,7 +115,7 @@ export function AuthForm({ config, mode, onModeChange }: AuthFormProps) {
           firstName: values.firstName ?? '',
           lastName: values.lastName ?? '',
           studentId: values.studentId ?? '',
-          course: values.course ?? '',
+          course: values.course || courseOptions[0] || '',
           yearLevel: Number(values.yearLevel),
           departmentId,
         })
@@ -80,21 +146,58 @@ export function AuthForm({ config, mode, onModeChange }: AuthFormProps) {
           />
         ))}
         {isRegister ? (
-          <label className="grid gap-2 text-[12px] font-semibold text-[#1b3a6b]">
-            Department
-            <select
-              className="h-10 rounded-[10px] border border-[#7fa8de] bg-white px-3 text-[13px]"
-              onChange={(event) => updateField('departmentId', event.target.value)}
-              required
-              value={values.departmentId ?? departments[0]?.id ?? ''}
-            >
-              {departments.map((department) => (
-                <option key={department.id} value={department.id}>
-                  {department.name}
+          <>
+            <label className="grid gap-2 text-[12px] font-semibold text-[#1b3a6b]">
+              Year Level
+              <select
+                className="h-10 rounded-[10px] border border-[#7fa8de] bg-white px-3 text-[13px]"
+                onChange={(event) => updateField('yearLevel', event.target.value)}
+                required
+                value={values.yearLevel ?? ''}
+              >
+                <option value="" disabled>
+                  Select year level
                 </option>
-              ))}
-            </select>
-          </label>
+                {yearLevelOptions.map((yearLevel) => (
+                  <option key={yearLevel.value} value={yearLevel.value}>
+                    {yearLevel.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="grid gap-2 text-[12px] font-semibold text-[#1b3a6b]">
+              Department
+              <select
+                className="h-10 rounded-[10px] border border-[#7fa8de] bg-white px-3 text-[13px]"
+                disabled={!departments.length}
+                onChange={(event) => updateDepartment(event.target.value)}
+                required
+                value={selectedDepartmentId}
+              >
+                {!departments.length ? <option value="">Select a Department</option> : null}
+                {departments.map((department) => (
+                  <option key={department.id} value={department.id}>
+                    {department.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="grid gap-2 text-[12px] font-semibold text-[#1b3a6b]">
+              Course
+              <select
+                className="h-10 rounded-[10px] border border-[#7fa8de] bg-white px-3 text-[13px]"
+                onChange={(event) => updateField('course', event.target.value)}
+                required
+                value={values.course || ''}
+              >
+                {courseOptions.map((course) => (
+                  <option key={course} value={course}>
+                    {course}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </>
         ) : null}
       </div>
 
@@ -130,7 +233,7 @@ export function AuthForm({ config, mode, onModeChange }: AuthFormProps) {
 
       {switchLink ? (
         <button
-          className="mx-auto mt-[15px] block cursor-pointer border-0 bg-transparent p-0 text-center text-[12px] font-medium leading-none tracking-[0.48px] text-[#1b3a6b] lg:text-[13px] lg:tracking-[0.52px]"
+          className="mx-auto mt-[15px] block cursor-pointer border-0 bg-transparent p-0 text-center text-[11px] font-medium leading-none tracking-[0.2px] text-[#1b3a6b] lg:text-[12px]"
           onClick={() => onModeChange(switchLink.target)}
           type="button"
         >

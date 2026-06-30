@@ -1,3 +1,5 @@
+import { LogOut } from 'lucide-react'
+import { useAuth } from '@/features/auth/AuthContext'
 import type {
   NavigationBrand,
   NavigationItem,
@@ -78,6 +80,8 @@ function SidebarUtilityLink({ item }: { item: NavigationUtilityItem }) {
 }
 
 export function AppSidebar({ brand, items, profile, utilityItem }: AppSidebarProps) {
+  const { logout } = useAuth()
+
   return (
     <aside className="hidden min-h-svh w-[287px] shrink-0 flex-col bg-[#1b3a6b] px-[23px] pb-6 pt-6 text-[#dfdddd] lg:flex">
       <a className="flex items-start gap-[11px] no-underline" href={brand.href} aria-label={`${brand.name} home`}>
@@ -114,8 +118,11 @@ export function AppSidebar({ brand, items, profile, utilityItem }: AppSidebarPro
         {utilityItem ? <SidebarUtilityLink item={utilityItem} /> : null}
       </nav>
 
-      <div className="mt-auto border-t border-[#f7f4ec]/70 pt-4">
-        <a className="flex items-center gap-2 no-underline" href={profile.href}>
+      <div className="mt-auto grid gap-3 border-t border-[#f7f4ec]/70 pt-4">
+        <a
+          className="flex items-center gap-2 rounded-md no-underline transition duration-200 hover:translate-x-1 hover:bg-[#295498]/60"
+          href={profile.href}
+        >
           <span className="size-[52px] rounded-full bg-[#d9d9d9]" aria-hidden="true" />
           <span>
             <span className="block text-[10px] font-extrabold leading-none text-[#f7f4ec]">
@@ -126,6 +133,14 @@ export function AppSidebar({ brand, items, profile, utilityItem }: AppSidebarPro
             </span>
           </span>
         </a>
+        <button
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-white/45 bg-transparent text-[13px] font-semibold text-white transition duration-200 hover:bg-[#295498] active:scale-[0.98]"
+          onClick={logout}
+          type="button"
+        >
+          <LogOut aria-hidden="true" size={15} />
+          Log out
+        </button>
       </div>
     </aside>
   )

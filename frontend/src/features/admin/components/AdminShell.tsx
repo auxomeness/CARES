@@ -1,5 +1,6 @@
-import { Menu, X } from 'lucide-react'
+import { LogOut, Menu, UserRound, X } from 'lucide-react'
 import { type ReactNode, useState } from 'react'
+import { useAuth } from '@/features/auth/AuthContext'
 import { adminNav, type AdminSection } from '../adminData'
 
 type AdminShellProps = {
@@ -9,6 +10,11 @@ type AdminShellProps = {
 
 export function AdminShell({ activeSection, children }: AdminShellProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const { logout } = useAuth()
+  const mobileNav = [
+    ...adminNav,
+    { section: 'dashboard' as const, label: 'User', href: '#admin-profile', icon: UserRound },
+  ]
 
   return (
     <main className="min-h-svh overflow-x-hidden bg-[#f2f2f2] text-[#101010] lg:flex">
@@ -43,9 +49,27 @@ export function AdminShell({ activeSection, children }: AdminShellProps) {
           })}
         </nav>
 
-        <div className="mt-auto border-t border-white/70 pt-4">
-          <p className="m-0 text-[10px] font-extrabold leading-none">System Admin</p>
-          <p className="m-0 mt-1 text-[13px] leading-none text-white/70">Full Access</p>
+        <div className="mt-auto grid gap-3 border-t border-white/70 pt-4">
+          <a
+            className="flex items-center gap-2 rounded-md text-white no-underline transition duration-200 hover:translate-x-1 hover:bg-[#1b3a6b]/70"
+            href="#admin-profile"
+          >
+            <span className="grid size-[52px] place-items-center rounded-full bg-white/20">
+              <UserRound aria-hidden="true" size={22} />
+            </span>
+            <span>
+              <span className="block text-[10px] font-extrabold leading-none">System Admin</span>
+              <span className="mt-1 block text-[13px] leading-none text-white/70">Full Access</span>
+            </span>
+          </a>
+          <button
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-white/45 bg-transparent text-[13px] font-semibold text-white transition duration-200 hover:bg-[#1b3a6b] active:scale-[0.98]"
+            onClick={logout}
+            type="button"
+          >
+            <LogOut aria-hidden="true" size={15} />
+            Log out
+          </button>
         </div>
       </aside>
 
@@ -73,13 +97,16 @@ export function AdminShell({ activeSection, children }: AdminShellProps) {
       </div>
 
       <nav className="fixed bottom-0 left-0 right-0 z-40 grid h-[67px] grid-cols-5 bg-[#101827] px-4 pt-3 shadow-[0_-8px_24px_rgba(16,24,39,0.25)] lg:hidden">
-        {adminNav.map((item) => {
+        {mobileNav.map((item) => {
           const Icon = item.icon
-          const isActive = item.section === activeSection
+          const isActive =
+            item.href === '#admin-profile'
+              ? window.location.hash === '#admin-profile'
+              : item.section === activeSection
 
           return (
             <a
-              className="group grid justify-items-center gap-1 text-[7px] font-bold leading-none text-white no-underline transition duration-200 hover:-translate-y-0.5 active:scale-95"
+              className="group grid min-w-0 justify-items-center gap-1 text-[8px] font-semibold leading-none text-white no-underline transition duration-200 hover:-translate-y-0.5 active:scale-95"
               href={item.href}
               key={item.label}
             >
@@ -90,7 +117,7 @@ export function AdminShell({ activeSection, children }: AdminShellProps) {
               >
                 <Icon aria-hidden="true" size={22} />
               </span>
-              <span>{item.label}</span>
+              <span className="max-w-full truncate text-white">{item.label}</span>
             </a>
           )
         })}
@@ -126,6 +153,22 @@ export function AdminShell({ activeSection, children }: AdminShellProps) {
                   </a>
                 )
               })}
+              <a
+                className="inline-flex min-h-11 items-center gap-3 rounded-[6px] px-3 text-[14px] font-semibold text-white no-underline transition duration-200 hover:translate-x-1 hover:bg-[#1b3a6b]"
+                href="#admin-profile"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <UserRound aria-hidden="true" size={18} />
+                Profile
+              </a>
+              <button
+                className="inline-flex min-h-11 items-center gap-3 rounded-[6px] px-3 text-[14px] font-semibold text-white transition duration-200 hover:translate-x-1 hover:bg-[#1b3a6b]"
+                onClick={logout}
+                type="button"
+              >
+                <LogOut aria-hidden="true" size={18} />
+                Log out
+              </button>
             </div>
           </aside>
         </div>

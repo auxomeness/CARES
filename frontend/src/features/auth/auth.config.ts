@@ -73,18 +73,6 @@ export const authModes: Record<AuthMode, AuthModeConfig> = {
         type: 'text',
         autoComplete: 'off',
       },
-      {
-        id: 'course',
-        label: 'Course',
-        type: 'text',
-        autoComplete: 'organization-title',
-      },
-      {
-        id: 'yearLevel',
-        label: 'Year Level',
-        type: 'text',
-        autoComplete: 'off',
-      },
     ],
   },
 }
