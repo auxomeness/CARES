@@ -16,6 +16,28 @@ const meta = {
   faculty: { title: 'Faculty', icon: UserRound },
 }
 
+function DirectoryCardSkeleton() {
+  return (
+    <article className="grid min-h-[275px] grid-rows-[auto_auto_auto_1fr_auto] rounded-[6px] border border-[#295498]/40 bg-white p-5 shadow-[3px_3px_2.5px_1px_#1b3a6b]">
+      <div className="flex items-start justify-between gap-3">
+        <span className="size-11 animate-pulse rounded-[6px] bg-[#edf4ff]" />
+        <span className="h-6 w-24 animate-pulse rounded-full bg-[#f5d788]/80" />
+      </div>
+      <span className="mt-5 h-6 w-3/4 animate-pulse rounded bg-[#dbe9ff]" />
+      <div className="mt-4 grid gap-2">
+        <span className="h-3 w-full animate-pulse rounded bg-[#edf4ff]" />
+        <span className="h-3 w-5/6 animate-pulse rounded bg-[#edf4ff]" />
+        <span className="h-3 w-2/3 animate-pulse rounded bg-[#edf4ff]" />
+      </div>
+      <div className="mt-5 grid gap-2">
+        <span className="h-3 w-2/3 animate-pulse rounded bg-[#dbe9ff]" />
+        <span className="h-3 w-3/4 animate-pulse rounded bg-[#dbe9ff]" />
+      </div>
+      <span className="mt-5 h-9 w-28 animate-pulse rounded bg-[#1b3a6b]/80" />
+    </article>
+  )
+}
+
 export function StudentDirectories({ kind }: { kind?: DirectoryKind }) {
   const [search, setSearch] = useState('')
   const debouncedSearch = useDebouncedValue(search.trim())
@@ -69,55 +91,66 @@ export function StudentDirectories({ kind }: { kind?: DirectoryKind }) {
           value={search}
         />
       </div>
-      {result.isLoading ? <p className="mt-8 text-sm">Loading directory...</p> : null}
       {result.isError ? <p className="mt-8 text-sm text-red-700">Unable to load directory.</p> : null}
-      <section className="mt-8 grid gap-5 [grid-template-columns:repeat(auto-fit,minmax(280px,1fr))]">
-        {result.data?.data.map((record) => {
-          const isFaculty = 'position' in record
-          const name = isFaculty
-            ? `${record.user?.firstName ?? ''} ${record.user?.lastName ?? ''}`.trim()
-            : record.name
-          const departmentName = isFaculty
-            ? typeof record.department === 'string'
-              ? record.department
-              : record.department.name
-            : ''
-          const detail = isFaculty
-            ? `${record.position} - ${departmentName}`
-            : record.description || 'No description provided yet.'
-          const email = isFaculty ? record.user?.email : record.email
-          const location = isFaculty ? departmentName : record.location
-          return (
-            <article className="grid min-h-[245px] content-start rounded-[6px] border border-[#295498]/70 bg-white p-5 shadow-[3px_3px_2.5px_1px_#1b3a6b] transition duration-200 hover:-translate-y-0.5 hover:shadow-[4px_5px_4px_1px_#1b3a6b]" key={record.id}>
-              <div className="flex items-start justify-between gap-3">
-                <span className="grid size-11 place-items-center rounded-[6px] bg-[#edf4ff] text-[#1b3a6b]">
-                  <Icon size={23} />
-                </span>
-                <span className="rounded-full bg-[#f5d788] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.04em] text-[#1b3a6b]">
-                  {kind}
-                </span>
-              </div>
-              <h2 className="m-0 mt-4 text-xl font-semibold leading-tight text-[#101010]">{name || 'Unnamed record'}</h2>
-              <p className="m-0 mt-2 line-clamp-3 text-sm leading-snug text-[#434343]">{detail}</p>
-              <div className="mt-4 grid gap-2 text-[12px] text-[#1b3a6b]">
-                {location ? (
-                  <span className="inline-flex items-center gap-2">
-                    <MapPin aria-hidden="true" size={14} />
-                    {location}
+      {result.isLoading ? (
+        <section
+          className="mt-8 grid gap-6 [grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr))]"
+          aria-label="Loading directory records"
+        >
+          {Array.from({ length: 6 }, (_, index) => (
+            <DirectoryCardSkeleton key={index} />
+          ))}
+        </section>
+      ) : null}
+      {!result.isLoading ? (
+        <section className="mt-8 grid gap-6 [grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr))]">
+          {result.data?.data.map((record) => {
+            const isFaculty = 'position' in record
+            const name = isFaculty
+              ? `${record.user?.firstName ?? ''} ${record.user?.lastName ?? ''}`.trim()
+              : record.name
+            const departmentName = isFaculty
+              ? typeof record.department === 'string'
+                ? record.department
+                : record.department.name
+              : ''
+            const detail = isFaculty
+              ? `${record.position} - ${departmentName}`
+              : record.description || 'No description provided yet.'
+            const email = isFaculty ? record.user?.email : record.email
+            const location = isFaculty ? departmentName : record.location
+            return (
+              <article className="grid min-h-[275px] grid-rows-[auto_auto_auto_1fr_auto] rounded-[6px] border border-[#295498]/70 bg-white p-5 shadow-[3px_3px_2.5px_1px_#1b3a6b] transition duration-200 hover:-translate-y-0.5 hover:shadow-[4px_5px_4px_1px_#1b3a6b]" key={record.id}>
+                <div className="flex items-start justify-between gap-3">
+                  <span className="grid size-11 place-items-center rounded-[6px] bg-[#edf4ff] text-[#1b3a6b]">
+                    <Icon size={23} />
                   </span>
-                ) : null}
-                {email ? (
-                  <span className="inline-flex items-center gap-2 break-all">
-                    <Mail aria-hidden="true" size={14} />
-                    {email}
+                  <span className="rounded-full bg-[#f5d788] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.04em] text-[#1b3a6b]">
+                    {kind}
                   </span>
-                ) : null}
-              </div>
-              <LoadingLink className="mt-auto inline-flex h-9 w-fit items-center rounded bg-[#1b3a6b] px-4 text-sm font-semibold !text-white no-underline transition duration-200 hover:bg-[#295498] active:scale-[0.98]" href={`#student-directory-${kind}-${record.id}`}>View details</LoadingLink>
-            </article>
-          )
-        })}
-      </section>
+                </div>
+                <h2 className="m-0 mt-4 text-xl font-semibold leading-tight text-[#101010]">{name || 'Unnamed record'}</h2>
+                <p className="m-0 mt-2 line-clamp-3 text-sm leading-snug text-[#434343]">{detail}</p>
+                <div className="mt-5 grid content-start gap-2 text-[12px] text-[#1b3a6b]">
+                  {location ? (
+                    <span className="inline-flex min-w-0 items-start gap-2">
+                      <MapPin aria-hidden="true" size={14} />
+                      <span className="min-w-0 leading-snug">{location}</span>
+                    </span>
+                  ) : null}
+                  {email ? (
+                    <span className="inline-flex min-w-0 items-start gap-2">
+                      <Mail aria-hidden="true" size={14} />
+                      <span className="min-w-0 break-all leading-snug">{email}</span>
+                    </span>
+                  ) : null}
+                </div>
+                <LoadingLink className="mt-5 inline-flex h-9 w-fit items-center rounded bg-[#1b3a6b] px-4 text-sm font-semibold !text-white no-underline transition duration-200 hover:bg-[#295498] active:scale-[0.98]" href={`#student-directory-${kind}-${record.id}`}>View details</LoadingLink>
+              </article>
+            )
+          })}
+        </section>
+      ) : null}
       {!result.isLoading && !result.data?.data.length ? <p className="mt-8 rounded border bg-white p-6 text-center text-sm">No matching records.</p> : null}
     </StudentWorkspaceShell>
   )
