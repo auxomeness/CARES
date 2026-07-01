@@ -1,4 +1,4 @@
-import { CalendarDays, Send } from 'lucide-react'
+import { CalendarDays, ChevronLeft, ChevronRight, Clock, Send } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { type FormEvent, useEffect, useState } from 'react'
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader'
@@ -11,6 +11,21 @@ import { StudentWorkspaceShell } from './StudentWorkspaceShell'
 const toLocalInput = (date: Date) => {
   const offset = date.getTimezoneOffset()
   return new Date(date.getTime() - offset * 60_000).toISOString().slice(0, 16)
+}
+
+const toDateKey = (date: Date) => toLocalInput(date).slice(0, 10)
+const getTimeValue = (value: string, fallback: string) => value.slice(11, 16) || fallback
+
+function getCalendarDays(month: Date) {
+  const firstDay = new Date(month.getFullYear(), month.getMonth(), 1)
+  const start = new Date(firstDay)
+  start.setDate(firstDay.getDate() - firstDay.getDay())
+
+  return Array.from({ length: 42 }, (_, index) => {
+    const date = new Date(start)
+    date.setDate(start.getDate() + index)
+    return date
+  })
 }
 
 export function StudentAppointmentForm() {
@@ -29,6 +44,10 @@ export function StudentAppointmentForm() {
   const [endTime, setEndTime] = useState(
     toLocalInput(new Date(initialSchedule.getTime() + 30 * 60_000)),
   )
+  const [calendarMonth, setCalendarMonth] = useState(
+    () => new Date(initialSchedule.getFullYear(), initialSchedule.getMonth(), 1),
+  )
+  const [todayKey] = useState(() => toDateKey(new Date()))
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [slots, setSlots] = useState<Array<{ startTime: string; endTime: string }>>([])
@@ -77,6 +96,30 @@ export function StudentAppointmentForm() {
       ? `${selectedOption.user?.firstName ?? ''} ${selectedOption.user?.lastName ?? ''}`.trim()
       : selectedOption.name
     : 'Not selected'
+  const selectedDateKey = startTime.slice(0, 10)
+  const calendarDays = getCalendarDays(calendarMonth)
+
+  const chooseDate = (date: Date) => {
+    const dateKey = toDateKey(date)
+    if (dateKey < todayKey) {
+      setError('Choose today or a future date.')
+      return
+    }
+
+    const startValue = getTimeValue(startTime, '09:00')
+    const endValue = getTimeValue(endTime, '09:30')
+    setError('')
+    setStartTime(`${dateKey}T${startValue}`)
+    setEndTime(`${dateKey}T${endValue}`)
+  }
+
+  const chooseStartTime = (time: string) => {
+    const nextStart = `${selectedDateKey}T${time}`
+    const nextEnd = new Date(nextStart)
+    nextEnd.setMinutes(nextEnd.getMinutes() + 30)
+    setStartTime(nextStart)
+    setEndTime(toLocalInput(nextEnd))
+  }
 
   const submit = async (event: FormEvent) => {
     event.preventDefault()
@@ -159,15 +202,97 @@ export function StudentAppointmentForm() {
             Description
             <textarea className="min-h-28 rounded border border-[#7fa8de] px-3 py-3" onChange={(e) => setDescription(e.target.value)} value={description} />
           </label>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="grid gap-2 text-xs font-semibold text-[#1b3a6b]">
-              Start
-              <input className="h-11 rounded border border-[#7fa8de] px-3" min={toLocalInput(new Date())} onChange={(e) => setStartTime(e.target.value)} required type="datetime-local" value={startTime} />
-            </label>
-            <label className="grid gap-2 text-xs font-semibold text-[#1b3a6b]">
-              End
-              <input className="h-11 rounded border border-[#7fa8de] px-3" min={startTime} onChange={(e) => setEndTime(e.target.value)} required type="datetime-local" value={endTime} />
-            </label>
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_220px]">
+            <section className="rounded-[5px] border border-[#7fa8de] bg-[#edf4ff] p-4">
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="m-0 inline-flex items-center gap-2 text-sm font-semibold text-[#1b3a6b]">
+                  <CalendarDays aria-hidden="true" size={16} />
+                  {calendarMonth.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
+                </h3>
+                <div className="flex gap-2">
+                  <button
+                    aria-label="Previous month"
+                    className="grid size-8 place-items-center rounded border border-[#1b3a6b] bg-white text-[#1b3a6b]"
+                    onClick={() =>
+                      setCalendarMonth(
+                        (current) => new Date(current.getFullYear(), current.getMonth() - 1, 1),
+                      )
+                    }
+                    type="button"
+                  >
+                    <ChevronLeft size={16} />
+                  </button>
+                  <button
+                    aria-label="Next month"
+                    className="grid size-8 place-items-center rounded border border-[#1b3a6b] bg-white text-[#1b3a6b]"
+                    onClick={() =>
+                      setCalendarMonth(
+                        (current) => new Date(current.getFullYear(), current.getMonth() + 1, 1),
+                      )
+                    }
+                    type="button"
+                  >
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
+              <div className="mt-4 grid grid-cols-7 gap-1 text-center text-[10px] font-semibold text-[#1b3a6b]">
+                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day) => (
+                  <span key={day}>{day}</span>
+                ))}
+              </div>
+              <div className="mt-2 grid grid-cols-7 gap-1">
+                {calendarDays.map((day) => {
+                  const dayKey = toDateKey(day)
+                  const isPast = dayKey < todayKey
+                  const isSelected = dayKey === selectedDateKey
+                  const isOutsideMonth = day.getMonth() !== calendarMonth.getMonth()
+                  return (
+                    <button
+                      className={`grid aspect-square place-items-center rounded text-[12px] font-semibold transition duration-200 ${
+                        isSelected
+                          ? 'bg-[#1b3a6b] !text-white shadow-md'
+                          : isPast
+                            ? 'cursor-not-allowed bg-white/45 text-[#9aa4b2]'
+                            : 'bg-white text-[#1b3a6b] hover:-translate-y-0.5 hover:bg-[#dbe9ff]'
+                      } ${isOutsideMonth ? 'opacity-45' : ''}`}
+                      disabled={isPast}
+                      key={dayKey}
+                      onClick={() => chooseDate(day)}
+                      type="button"
+                    >
+                      {day.getDate()}
+                    </button>
+                  )
+                })}
+              </div>
+            </section>
+            <section className="rounded-[5px] border border-[#7fa8de] bg-white p-4">
+              <label className="grid gap-2 text-xs font-semibold text-[#1b3a6b]">
+                <span className="inline-flex items-center gap-2">
+                  <Clock aria-hidden="true" size={15} />
+                  Start Time
+                </span>
+                <input
+                  className="h-10 rounded border border-[#7fa8de] px-3"
+                  onChange={(event) => chooseStartTime(event.target.value)}
+                  required
+                  type="time"
+                  value={getTimeValue(startTime, '09:00')}
+                />
+              </label>
+              <label className="mt-3 grid gap-2 text-xs font-semibold text-[#1b3a6b]">
+                End Time
+                <input
+                  className="h-10 rounded border border-[#7fa8de] px-3"
+                  min={getTimeValue(startTime, '09:00')}
+                  onChange={(event) => setEndTime(`${selectedDateKey}T${event.target.value}`)}
+                  required
+                  type="time"
+                  value={getTimeValue(endTime, '09:30')}
+                />
+              </label>
+            </section>
           </div>
           <div>
             <p className="text-xs font-semibold text-[#1b3a6b]">Available slots</p>
@@ -221,7 +346,7 @@ export function StudentAppointmentForm() {
               <dd className="m-0">{title || 'Not provided'}</dd>
             </div>
           </dl>
-          <button className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded bg-[#1b3a6b] text-sm font-semibold !text-white disabled:opacity-60" disabled={isSubmitting || !targetId} type="submit">
+          <button className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded bg-[#1b3a6b] text-sm font-semibold !text-white disabled:opacity-60" disabled={isSubmitting || !selectedTargetId} type="submit">
             {isSubmitting ? <CalendarDays className="animate-pulse" size={16} /> : <Send size={16} />}
             {isSubmitting ? 'Booking...' : 'Book Appointment'}
           </button>

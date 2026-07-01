@@ -1,4 +1,4 @@
-import { Pencil, Plus, Save, Trash2 } from 'lucide-react'
+import { Loader2, Pencil, Plus, Save, Trash2 } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { type FormEvent, useState } from 'react'
 import { getApiErrorMessage } from '@/lib/api'
@@ -46,6 +46,8 @@ export function AdminDirectoryPage({ createLabel, description, section, title }:
     password: '',
   })
   const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
+  const [pendingAction, setPendingAction] = useState('')
   const [edit, setEdit] = useState<Record<string, string> | null>(null)
   const selected = records.data?.data.find((item) => item?.id === selectedId) ?? records.data?.data[0]
 
@@ -55,6 +57,8 @@ export function AdminDirectoryPage({ createLabel, description, section, title }:
   const create = async (event: FormEvent) => {
     event.preventDefault()
     setError('')
+    setNotice('')
+    setPendingAction('create')
     try {
       if (section === 'offices') {
         await adminApi.createOffice({
@@ -94,14 +98,19 @@ export function AdminDirectoryPage({ createLabel, description, section, title }:
       }
       setForm((current) => Object.fromEntries(Object.keys(current).map((key) => [key, key === 'position' ? 'PROFESSOR' : ''])))
       await refresh()
+      setNotice(`${createLabel} created successfully.`)
     } catch (failure) {
       setError(getApiErrorMessage(failure))
+    } finally {
+      setPendingAction('')
     }
   }
 
   const remove = async () => {
     if (!selected) return
     setError('')
+    setNotice('')
+    setPendingAction('delete')
     try {
       if (section === 'offices') await adminApi.deleteOffice(selected.id)
       else if (section === 'departments') await adminApi.deleteDepartment(selected.id)
@@ -109,8 +118,11 @@ export function AdminDirectoryPage({ createLabel, description, section, title }:
       else await adminApi.deleteStudent(selected.id)
       setSelectedId('')
       await refresh()
+      setNotice('Selected record was removed.')
     } catch (failure) {
       setError(getApiErrorMessage(failure))
+    } finally {
+      setPendingAction('')
     }
   }
 
@@ -153,6 +165,8 @@ export function AdminDirectoryPage({ createLabel, description, section, title }:
     event.preventDefault()
     if (!selected || !edit) return
     setError('')
+    setNotice('')
+    setPendingAction('update')
     try {
       if (section === 'offices') await adminApi.updateOffice(selected.id, edit)
       else if (section === 'departments') await adminApi.updateDepartment(selected.id, edit)
@@ -160,8 +174,11 @@ export function AdminDirectoryPage({ createLabel, description, section, title }:
       else await adminApi.updateStudent(selected.id, { ...edit, yearLevel: Number(edit.yearLevel) })
       setEdit(null)
       await refresh()
+      setNotice('Selected record was updated.')
     } catch (failure) {
       setError(getApiErrorMessage(failure))
+    } finally {
+      setPendingAction('')
     }
   }
 
@@ -178,12 +195,12 @@ export function AdminDirectoryPage({ createLabel, description, section, title }:
               const student = 'studentId' in item
               const name = faculty || student ? `${item.user?.firstName ?? ''} ${item.user?.lastName ?? ''}` : item.name
               const detail = faculty
-                ? `${item.position} · ${typeof item.department === 'string' ? item.department : item.department.name}`
+                ? `${item.position} - ${typeof item.department === 'string' ? item.department : item.department.name}`
                 : student
-                  ? `${item.studentId} · ${item.course} · Year ${item.yearLevel}`
+                  ? `${item.studentId} - ${item.course} - Year ${item.yearLevel}`
                 : item.email || item.location
               return (
-                <button className={`rounded border p-4 text-left shadow-[3px_3px_2.5px_1px_#1b3a6b] ${selected?.id === item.id ? 'bg-[#c1d9ff]' : 'bg-white'}`} key={item.id} onClick={() => setSelectedId(item.id)} type="button">
+                <button className={`rounded border p-4 text-left shadow-[3px_3px_2.5px_1px_#1b3a6b] transition duration-200 hover:-translate-y-0.5 hover:shadow-[4px_5px_4px_1px_#1b3a6b] ${selected?.id === item.id ? 'bg-[#c1d9ff]' : 'bg-white'}`} key={item.id} onClick={() => setSelectedId(item.id)} type="button">
                   <p className="text-xs font-semibold text-[#1b3a6b]">{item.id}</p>
                   <h2 className="mt-2 text-xl font-semibold">{name}</h2>
                   <p className="mt-2 text-sm">{detail}</p>
@@ -222,8 +239,11 @@ export function AdminDirectoryPage({ createLabel, description, section, title }:
               </>
             )}
             <input className="h-10 rounded border px-3 text-sm" onChange={(e) => set('email', e.target.value)} placeholder="Email" required type="email" value={form.email} />
-            {error ? <p className="text-xs text-red-700">{error}</p> : null}
-            <button className="inline-flex h-10 items-center justify-center gap-2 rounded bg-[#1b3a6b] text-sm font-semibold text-white" type="submit"><Plus size={15} /> Create</button>
+            {notice ? <p className="rounded bg-green-50 px-3 py-2 text-xs font-semibold text-green-700">{notice}</p> : null}
+            {error ? <p className="rounded bg-red-50 px-3 py-2 text-xs font-semibold text-red-700">{error}</p> : null}
+            <button className="inline-flex h-10 items-center justify-center gap-2 rounded bg-[#1b3a6b] text-sm font-semibold !text-white disabled:opacity-70" disabled={Boolean(pendingAction)} type="submit">
+              {pendingAction === 'create' ? <Loader2 className="animate-spin" size={15} /> : <Plus size={15} />} Create
+            </button>
           </form>
           <section className="rounded border border-[#1b3a6b] bg-white p-5 shadow-[3px_3px_2.5px_1px_#1b3a6b]">
             <h2 className="text-xl font-semibold text-[#1b3a6b]">Selected Record</h2>
@@ -257,13 +277,17 @@ export function AdminDirectoryPage({ createLabel, description, section, title }:
                       </>
                     )}
                     <input className="h-10 rounded border px-3 text-sm" onChange={(event) => setEdit({ ...edit, email: event.target.value })} placeholder="Email" required type="email" value={edit.email} />
-                    <button className="inline-flex h-10 items-center justify-center gap-2 rounded bg-[#1b3a6b] text-sm font-semibold text-white" type="submit"><Save size={15} /> Save Changes</button>
+                    <button className="inline-flex h-10 items-center justify-center gap-2 rounded bg-[#1b3a6b] text-sm font-semibold !text-white disabled:opacity-70" disabled={Boolean(pendingAction)} type="submit">
+                      {pendingAction === 'update' ? <Loader2 className="animate-spin" size={15} /> : <Save size={15} />} Save Changes
+                    </button>
                     <button className="h-9 text-sm font-semibold text-[#434343]" onClick={() => setEdit(null)} type="button">Cancel Edit</button>
                   </form>
                 ) : (
                   <button className="inline-flex h-10 w-full items-center justify-center gap-2 rounded border border-[#1b3a6b] text-sm font-semibold text-[#1b3a6b]" onClick={beginEdit} type="button"><Pencil size={15} /> Edit</button>
                 )}
-                <button className="inline-flex h-10 w-full items-center justify-center gap-2 rounded border border-red-700 text-sm font-semibold text-red-700" onClick={() => void remove()} type="button"><Trash2 size={15} /> Deactivate / Delete</button>
+                <button className="inline-flex h-10 w-full items-center justify-center gap-2 rounded border border-red-700 text-sm font-semibold text-red-700 disabled:opacity-60" disabled={Boolean(pendingAction)} onClick={() => void remove()} type="button">
+                  {pendingAction === 'delete' ? <Loader2 className="animate-spin" size={15} /> : <Trash2 size={15} />} Deactivate / Delete
+                </button>
               </div>
             ) : <p className="mt-3 text-sm">No record selected.</p>}
           </section>

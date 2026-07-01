@@ -1,4 +1,4 @@
-import { Building2, GraduationCap, UserRound } from 'lucide-react'
+import { Building2, GraduationCap, Mail, MapPin, UserRound } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader'
@@ -77,15 +77,43 @@ export function StudentDirectories({ kind }: { kind?: DirectoryKind }) {
           const name = isFaculty
             ? `${record.user?.firstName ?? ''} ${record.user?.lastName ?? ''}`.trim()
             : record.name
+          const departmentName = isFaculty
+            ? typeof record.department === 'string'
+              ? record.department
+              : record.department.name
+            : ''
           const detail = isFaculty
-            ? `${record.position} - ${typeof record.department === 'string' ? record.department : record.department.name}`
-            : record.description || record.email || record.location || ''
+            ? `${record.position} - ${departmentName}`
+            : record.description || 'No description provided yet.'
+          const email = isFaculty ? record.user?.email : record.email
+          const location = isFaculty ? departmentName : record.location
           return (
-            <article className="grid min-h-[210px] content-start rounded-[5px] border border-[#295498]/70 bg-white p-5 shadow-[3px_3px_2.5px_1px_#1b3a6b] transition duration-200 hover:-translate-y-0.5" key={record.id}>
-              <Icon className="text-[#1b3a6b]" size={24} />
-              <h2 className="m-0 mt-4 text-xl font-semibold leading-tight">{name}</h2>
-              <p className="m-0 mt-2 text-sm leading-snug text-[#434343]">{detail}</p>
-              <LoadingLink className="mt-auto inline-flex h-9 w-fit items-center rounded bg-[#1b3a6b] px-4 text-sm font-semibold !text-white no-underline" href={`#student-directory-${kind}-${record.id}`}>View details</LoadingLink>
+            <article className="grid min-h-[245px] content-start rounded-[6px] border border-[#295498]/70 bg-white p-5 shadow-[3px_3px_2.5px_1px_#1b3a6b] transition duration-200 hover:-translate-y-0.5 hover:shadow-[4px_5px_4px_1px_#1b3a6b]" key={record.id}>
+              <div className="flex items-start justify-between gap-3">
+                <span className="grid size-11 place-items-center rounded-[6px] bg-[#edf4ff] text-[#1b3a6b]">
+                  <Icon size={23} />
+                </span>
+                <span className="rounded-full bg-[#f5d788] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.04em] text-[#1b3a6b]">
+                  {kind}
+                </span>
+              </div>
+              <h2 className="m-0 mt-4 text-xl font-semibold leading-tight text-[#101010]">{name || 'Unnamed record'}</h2>
+              <p className="m-0 mt-2 line-clamp-3 text-sm leading-snug text-[#434343]">{detail}</p>
+              <div className="mt-4 grid gap-2 text-[12px] text-[#1b3a6b]">
+                {location ? (
+                  <span className="inline-flex items-center gap-2">
+                    <MapPin aria-hidden="true" size={14} />
+                    {location}
+                  </span>
+                ) : null}
+                {email ? (
+                  <span className="inline-flex items-center gap-2 break-all">
+                    <Mail aria-hidden="true" size={14} />
+                    {email}
+                  </span>
+                ) : null}
+              </div>
+              <LoadingLink className="mt-auto inline-flex h-9 w-fit items-center rounded bg-[#1b3a6b] px-4 text-sm font-semibold !text-white no-underline transition duration-200 hover:bg-[#295498] active:scale-[0.98]" href={`#student-directory-${kind}-${record.id}`}>View details</LoadingLink>
             </article>
           )
         })}

@@ -67,31 +67,37 @@ export function StudentConcerns() {
       <div className="mt-8 grid gap-6 xl:grid-cols-[minmax(0,1fr)_390px]">
         <section className="grid content-start gap-4">
           {concerns.map((concern) => (
-            <button
-              className={`rounded-[5px] border px-4 py-4 text-left shadow-[3px_3px_2.5px_1px_#1b3a6b] ${
-                selected?.apiId === concern.apiId ? 'bg-[#c1d9ff]' : 'bg-white'
-              }`}
-              key={concern.apiId}
-              onClick={() => setSelectedId(concern.apiId ?? '')}
-              type="button"
-            >
-              <div className="flex justify-between gap-3">
-                <div>
-                  <p className="m-0 text-xs font-semibold text-[#1b3a6b]">{concern.id}</p>
-                  <h2 className="m-0 mt-2 text-xl font-semibold">{concern.title}</h2>
-                </div>
-                <span className={`h-fit rounded border px-3 py-1 text-xs ${getConcernStatusClass(concern.status)}`}>
-                  {concern.backendStatus?.replaceAll('_', ' ')}
-                </span>
-              </div>
-              <p className="mt-3 text-sm text-[#434343]">{concern.description}</p>
-              {(concern.detail?._count?.attachments ?? 0) > 0 ? (
-                <span className="mt-3 inline-flex items-center gap-1 rounded-full bg-[#edf4ff] px-3 py-1 text-[11px] font-semibold text-[#1b3a6b]">
-                  <Paperclip aria-hidden="true" size={13} />
-                  Attachment included
-                </span>
-              ) : null}
-            </button>
+            (() => {
+              const attachmentCount =
+                concern.detail?._count?.attachments ?? concern.detail?.attachments?.length ?? 0
+              return (
+                <button
+                  className={`rounded-[5px] border px-4 py-4 text-left shadow-[3px_3px_2.5px_1px_#1b3a6b] transition duration-200 hover:-translate-y-0.5 hover:shadow-[4px_5px_4px_1px_#1b3a6b] ${
+                    selected?.apiId === concern.apiId ? 'bg-[#c1d9ff]' : 'bg-white'
+                  }`}
+                  key={concern.apiId}
+                  onClick={() => setSelectedId(concern.apiId ?? '')}
+                  type="button"
+                >
+                  <div className="flex justify-between gap-3">
+                    <div>
+                      <p className="m-0 text-xs font-semibold text-[#1b3a6b]">{concern.id}</p>
+                      <h2 className="m-0 mt-2 text-xl font-semibold">{concern.title}</h2>
+                    </div>
+                    <span className={`h-fit rounded border px-3 py-1 text-xs ${getConcernStatusClass(concern.status)}`}>
+                      {concern.backendStatus?.replaceAll('_', ' ')}
+                    </span>
+                  </div>
+                  <p className="mt-3 text-sm text-[#434343]">{concern.description}</p>
+                  {attachmentCount > 0 ? (
+                    <span className="mt-3 inline-flex items-center gap-1 rounded-full border border-[#7fa8de] bg-[#edf4ff] px-3 py-1 text-[11px] font-semibold text-[#1b3a6b]">
+                      <Paperclip aria-hidden="true" size={13} />
+                      {attachmentCount} attachment{attachmentCount > 1 ? 's' : ''}
+                    </span>
+                  ) : null}
+                </button>
+              )
+            })()
           ))}
           {!isLoading && concerns.length === 0 ? (
             <p className="rounded border bg-white p-6 text-center text-sm">No concerns submitted.</p>

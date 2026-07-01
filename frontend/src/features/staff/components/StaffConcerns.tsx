@@ -1,4 +1,4 @@
-import { Send, Shuffle } from 'lucide-react'
+import { CheckCircle2, Loader2, Send, Shuffle } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { getApiErrorMessage } from '@/lib/api'
@@ -30,18 +30,25 @@ export function StaffConcerns({ role }: { role: Exclude<StaffRole, 'faculty'> })
   const [transferId, setTransferId] = useState('')
   const [reason, setReason] = useState('')
   const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
+  const [pendingAction, setPendingAction] = useState('')
   const selected =
     concerns.data?.data.find((concern) => concern.id === selectedId) ??
     concerns.data?.data[0] ??
     null
 
-  const mutate = async (action: () => Promise<unknown>) => {
+  const mutate = async (action: () => Promise<unknown>, successMessage: string) => {
     setError('')
+    setNotice('')
+    setPendingAction(successMessage)
     try {
       await action()
       await queryClient.invalidateQueries({ queryKey: ['concerns'] })
+      setNotice(successMessage)
     } catch (failure) {
       setError(getApiErrorMessage(failure))
+    } finally {
+      setPendingAction('')
     }
   }
 
@@ -65,7 +72,7 @@ export function StaffConcerns({ role }: { role: Exclude<StaffRole, 'faculty'> })
           <div className="mt-8 grid gap-4">
             {concerns.data?.data.map((concern) => (
               <button
-                className={`rounded-[6px] border p-4 text-left shadow-[3px_3px_2.5px_1px_#1b3a6b] ${selected?.id === concern.id ? 'bg-[#c1d9ff]' : 'bg-white'}`}
+                className={`rounded-[6px] border p-4 text-left shadow-[3px_3px_2.5px_1px_#1b3a6b] transition duration-200 hover:-translate-y-0.5 hover:shadow-[4px_5px_4px_1px_#1b3a6b] ${selected?.id === concern.id ? 'bg-[#c1d9ff]' : 'bg-white'}`}
                 key={concern.id}
                 onClick={() => setSelectedId(concern.id)}
                 type="button"
@@ -95,15 +102,15 @@ export function StaffConcerns({ role }: { role: Exclude<StaffRole, 'faculty'> })
                       {role === 'office' ? null : <option value="CLOSED">Closed</option>}
                     </select>
                   </label>
-                  <button className="inline-flex h-10 items-center justify-center gap-2 rounded bg-[#1b3a6b] text-sm font-semibold text-white" onClick={() => void mutate(() => concernApi.status(selected.id, status))} type="button">
-                    <Send size={15} /> Update Status
+                  <button className="inline-flex h-10 items-center justify-center gap-2 rounded bg-[#1b3a6b] text-sm font-semibold !text-white disabled:opacity-70" disabled={Boolean(pendingAction)} onClick={() => void mutate(() => concernApi.status(selected.id, status), 'Concern status updated.')} type="button">
+                    {pendingAction === 'Concern status updated.' ? <Loader2 className="animate-spin" size={15} /> : <Send size={15} />} Update Status
                   </button>
                   <label className="grid gap-2 text-xs font-semibold">
                     Resolution report
                     <textarea className="min-h-24 rounded border px-3 py-2" onChange={(e) => setResolution(e.target.value)} value={resolution} />
                   </label>
-                  <button className="h-10 rounded border border-green-700 text-sm font-semibold text-green-700" disabled={!resolution.trim()} onClick={() => void mutate(() => concernApi.resolve(selected.id, { summary: resolution, actionsTaken: resolution }))} type="button">
-                    Submit Resolution
+                  <button className="inline-flex h-10 items-center justify-center gap-2 rounded border border-green-700 text-sm font-semibold text-green-700 disabled:opacity-60" disabled={!resolution.trim() || Boolean(pendingAction)} onClick={() => void mutate(() => concernApi.resolve(selected.id, { summary: resolution, actionsTaken: resolution }), 'Resolution report submitted.')} type="button">
+                    {pendingAction === 'Resolution report submitted.' ? <Loader2 className="animate-spin" size={15} /> : <CheckCircle2 size={15} />} Submit Resolution
                   </button>
                   <div className="border-t pt-4">
                     <div className="grid grid-cols-2 gap-2">
@@ -115,8 +122,8 @@ export function StaffConcerns({ role }: { role: Exclude<StaffRole, 'faculty'> })
                       </select>
                     </div>
                     <textarea className="mt-2 min-h-20 w-full rounded border px-3 py-2 text-sm" onChange={(e) => setReason(e.target.value)} placeholder="Transfer reason" value={reason} />
-                    <button className="mt-2 inline-flex h-10 w-full items-center justify-center gap-2 rounded border border-[#1b3a6b] text-sm font-semibold text-[#1b3a6b]" disabled={!targetId || !reason.trim()} onClick={() => void mutate(() => concernApi.transfer(selected.id, { toTargetType: transferType, toOfficeId: transferType === 'OFFICE' ? targetId : null, toDepartmentId: transferType === 'DEPARTMENT' ? targetId : null, reason }))} type="button">
-                      <Shuffle size={15} /> Transfer Concern
+                    <button className="mt-2 inline-flex h-10 w-full items-center justify-center gap-2 rounded border border-[#1b3a6b] text-sm font-semibold text-[#1b3a6b] disabled:opacity-60" disabled={!targetId || !reason.trim() || Boolean(pendingAction)} onClick={() => void mutate(() => concernApi.transfer(selected.id, { toTargetType: transferType, toOfficeId: transferType === 'OFFICE' ? targetId : null, toDepartmentId: transferType === 'DEPARTMENT' ? targetId : null, reason }), 'Concern transfer submitted.')} type="button">
+                      {pendingAction === 'Concern transfer submitted.' ? <Loader2 className="animate-spin" size={15} /> : <Shuffle size={15} />} Transfer Concern
                     </button>
                   </div>
                 </>
@@ -125,7 +132,8 @@ export function StaffConcerns({ role }: { role: Exclude<StaffRole, 'faculty'> })
                   This concern is read-only while it is {selected.status.replaceAll('_', ' ').toLowerCase()}.
                 </p>
               )}
-              {error ? <p className="text-xs text-red-700">{error}</p> : null}
+              {notice ? <p className="rounded bg-green-50 px-3 py-2 text-xs font-semibold text-green-700">{notice}</p> : null}
+              {error ? <p className="rounded bg-red-50 px-3 py-2 text-xs font-semibold text-red-700">{error}</p> : null}
             </div>
           ) : <p className="mt-3 text-sm">No concern selected.</p>}
         </aside>
