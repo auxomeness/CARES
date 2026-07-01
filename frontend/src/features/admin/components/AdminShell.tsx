@@ -1,5 +1,6 @@
 import { LogOut, Menu, UserRound, X } from 'lucide-react'
 import { type ReactNode, useState } from 'react'
+import { BrandLogo } from '@/components/brand/BrandLogo'
 import { useAuth } from '@/features/auth/AuthContext'
 import { adminNav, type AdminSection } from '../adminData'
 
@@ -20,7 +21,7 @@ export function AdminShell({ activeSection, children }: AdminShellProps) {
     <main className="min-h-svh overflow-x-hidden bg-[#f2f2f2] text-[#101010] lg:flex">
       <aside className="hidden min-h-svh w-[287px] shrink-0 flex-col bg-[#101827] px-[23px] pb-6 pt-6 text-white lg:flex">
         <a className="flex items-start gap-[11px] no-underline" href="#admin">
-          <span className="grid size-[55px] shrink-0 place-items-center rounded-[5px] bg-[#d4a017]" />
+          <BrandLogo className="size-[55px] bg-white p-1" />
           <span>
             <span className="block text-[20px] font-semibold leading-none">CARES Admin</span>
             <span className="mt-1 block max-w-[198px] text-[10px] font-extralight leading-[1.18]">

@@ -1,4 +1,5 @@
 import { LogOut } from 'lucide-react'
+import { BrandLogo } from '@/components/brand/BrandLogo'
 import { useAuth } from '@/features/auth/AuthContext'
 import type {
   NavigationBrand,
@@ -85,7 +86,7 @@ export function AppSidebar({ brand, items, profile, utilityItem }: AppSidebarPro
   return (
     <aside className="hidden min-h-svh w-[287px] shrink-0 flex-col bg-[#1b3a6b] px-[23px] pb-6 pt-6 text-[#dfdddd] lg:flex">
       <a className="flex items-start gap-[11px] no-underline" href={brand.href} aria-label={`${brand.name} home`}>
-        <span className="grid size-[55px] shrink-0 place-items-center rounded-[5px] bg-[#d4a017]" />
+        <BrandLogo className="size-[55px] bg-white p-1" />
         <span className="pt-0">
           <span className="block text-[20px] font-semibold leading-none text-[#dfdddd]">
             {brand.name}

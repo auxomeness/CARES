@@ -1,5 +1,6 @@
 import { LogOut, Menu, UserRound, X } from 'lucide-react'
 import { type ReactNode, useState } from 'react'
+import { BrandLogo } from '@/components/brand/BrandLogo'
 import { useAuth } from '@/features/auth/AuthContext'
 import type { StaffRoleConfig, StaffSection } from '../staffData'
 
@@ -23,10 +24,7 @@ export function StaffWorkspaceShell({
     <main className="min-h-svh overflow-x-hidden bg-[#f2f2f2] text-[#101010] lg:flex">
       <aside className="hidden min-h-svh w-[287px] shrink-0 flex-col bg-[#1b3a6b] px-[23px] pb-6 pt-6 text-white lg:flex">
         <a className="flex items-start gap-[11px] no-underline" href={config.baseHash}>
-          <span
-            className="grid size-[55px] shrink-0 place-items-center rounded-[5px]"
-            style={{ backgroundColor: config.accent }}
-          />
+          <BrandLogo className="size-[55px] bg-white p-1" />
           <span>
             <span className="block text-[20px] font-semibold leading-none">CARES</span>
             <span className="mt-1 block max-w-[198px] text-[10px] font-extralight leading-[1.18]">

@@ -1,3 +1,4 @@
+import { BrandLogo } from '@/components/brand/BrandLogo'
 import { progressSteps } from '../auth.config'
 import { AuthTypewriter } from './AuthTypewriter'
 
@@ -8,10 +9,7 @@ export function BrandPanel() {
       aria-label="CARES overview"
     >
       <div className="flex items-center gap-2">
-        <span
-          className="h-[58px] w-[61px] shrink-0 animate-[softFloat_4s_ease-in-out_infinite] rounded-[18px] bg-[#f7f4ec]"
-          aria-hidden="true"
-        />
+        <BrandLogo className="size-[64px] animate-[softFloat_4s_ease-in-out_infinite] bg-white p-1.5" />
         <div>
           <p className="m-0 text-[25px] font-extrabold leading-none">CARES</p>
           <p className="m-0 mt-[5px] text-[11px] font-light leading-[1.2] text-[#f7f4ec]/75">
