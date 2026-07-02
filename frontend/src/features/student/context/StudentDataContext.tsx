@@ -200,7 +200,7 @@ export function StudentDataProvider({ children }: { children: ReactNode }) {
         )
         try {
           await concernApi.support(record?.id ?? id)
-          await refresh(['concerns', 'notifications'])
+          void queryClient.invalidateQueries({ queryKey: queryKeys.notifications })
         } catch (failure) {
           previousPublicQueries.forEach(([key, value]) => queryClient.setQueryData(key, value))
           throw failure

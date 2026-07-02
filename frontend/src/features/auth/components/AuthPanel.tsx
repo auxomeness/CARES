@@ -21,7 +21,7 @@ export function AuthPanel({ config, mode, onModeChange }: AuthPanelProps) {
 
       {!isRegister ? (
         <p className="fixed bottom-4 left-4 z-50 m-0 rounded bg-black/30 px-2 py-1 text-[11px] font-semibold leading-none text-white shadow-sm backdrop-blur-sm">
-          v1.0.0
+          v1.0.1
         </p>
       ) : null}
 

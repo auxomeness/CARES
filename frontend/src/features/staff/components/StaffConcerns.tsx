@@ -1,13 +1,23 @@
 import { CheckCircle2, Loader2, Send, Shuffle } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { getApiErrorMessage } from '@/lib/api'
-import type { DirectoryRecord } from '@/lib/apiTypes'
+import type { ConcernRecord, DirectoryRecord, PaginatedEnvelope } from '@/lib/apiTypes'
 import { queryKeys } from '@/lib/queryKeys'
 import { concernApi, directoryApi } from '@/services/caresApi'
 import type { StaffRole } from '../staffData'
 import { staffRoleConfigs } from '../staffData'
 import { StaffWorkspaceShell } from './StaffWorkspaceShell'
+
+const nextConcernStatuses: Record<string, Array<{ value: string; label: string }>> = {
+  SUBMITTED: [{ value: 'UNDER_REVIEW', label: 'Under Review' }],
+  TRANSFERRED: [{ value: 'UNDER_REVIEW', label: 'Under Review' }],
+  UNDER_REVIEW: [{ value: 'IN_PROGRESS', label: 'In Progress' }],
+  REOPENED: [
+    { value: 'UNDER_REVIEW', label: 'Under Review' },
+    { value: 'IN_PROGRESS', label: 'In Progress' },
+  ],
+}
 
 export function StaffConcerns({ role }: { role: Exclude<StaffRole, 'faculty'> }) {
   const config = staffRoleConfigs[role]
@@ -37,14 +47,39 @@ export function StaffConcerns({ role }: { role: Exclude<StaffRole, 'faculty'> })
     concerns.data?.data.find((concern) => concern.id === selectedId) ??
     concerns.data?.data[0] ??
     null
+  const statusOptions = useMemo(
+    () => (selected ? nextConcernStatuses[selected.status] ?? [] : []),
+    [selected],
+  )
+  const activeStatus = statusOptions.some((option) => option.value === status)
+    ? status
+    : statusOptions[0]?.value ?? ''
 
-  const mutate = async (action: () => Promise<unknown>, successMessage: string) => {
+  const patchConcernCache = (updated: ConcernRecord) => {
+    queryClient.setQueriesData<PaginatedEnvelope<ConcernRecord>>(
+      { queryKey: queryKeys.concerns.all },
+      (old) =>
+        old
+          ? {
+              ...old,
+              data: old.data.map((concern) =>
+                concern.id === updated.id ? { ...concern, ...updated } : concern,
+              ),
+            }
+          : old,
+    )
+  }
+
+  const mutate = async (action: () => Promise<ConcernRecord | unknown>, successMessage: string) => {
     setError('')
     setNotice('')
     setPendingAction(successMessage)
     try {
-      await action()
-      await queryClient.invalidateQueries({ queryKey: queryKeys.concerns.all })
+      const result = await action()
+      if (result && typeof result === 'object' && 'id' in result) {
+        patchConcernCache(result as ConcernRecord)
+      }
+      void queryClient.invalidateQueries({ queryKey: queryKeys.notifications })
       setNotice(successMessage)
     } catch (failure) {
       setError(getApiErrorMessage(failure))
@@ -56,7 +91,11 @@ export function StaffConcerns({ role }: { role: Exclude<StaffRole, 'faculty'> })
   const transferTargets: DirectoryRecord[] =
     transferType === 'OFFICE' ? offices.data?.data ?? [] : departments.data?.data ?? []
   const targetId = transferId || transferTargets[0]?.id || ''
-  const canManageSelected = Boolean(
+  const canManageSelected = Boolean(selected && statusOptions.length > 0)
+  const canResolveSelected = Boolean(
+    selected && ['UNDER_REVIEW', 'IN_PROGRESS', 'REOPENED'].includes(selected.status),
+  )
+  const canTransferSelected = Boolean(
     selected &&
       ['SUBMITTED', 'UNDER_REVIEW', 'IN_PROGRESS', 'TRANSFERRED', 'REOPENED'].includes(
         selected.status,
@@ -93,23 +132,28 @@ export function StaffConcerns({ role }: { role: Exclude<StaffRole, 'faculty'> })
           {selected ? (
             <div className="mt-5 grid gap-4">
               <h3 className="text-lg font-semibold">{selected.title}</h3>
-              {canManageSelected ? (
+              {canManageSelected || canResolveSelected || canTransferSelected ? (
                 <>
-                  <label className="grid gap-2 text-xs font-semibold">
-                    Status
-                    <select className="h-10 rounded border px-3" onChange={(e) => setStatus(e.target.value)} value={status}>
-                      <option value="UNDER_REVIEW">Under Review</option>
-                      <option value="IN_PROGRESS">In Progress</option>
-                    </select>
-                  </label>
-                  <button className="inline-flex h-10 items-center justify-center gap-2 rounded bg-[#1b3a6b] text-sm font-semibold !text-white disabled:opacity-70" disabled={Boolean(pendingAction)} onClick={() => void mutate(() => concernApi.status(selected.id, status), 'Concern status updated.')} type="button">
-                    {pendingAction === 'Concern status updated.' ? <Loader2 className="animate-spin" size={15} /> : <Send size={15} />} Update Status
-                  </button>
+                  {canManageSelected ? (
+                    <>
+                      <label className="grid gap-2 text-xs font-semibold">
+                        Status
+                        <select className="h-10 rounded border px-3" onChange={(e) => setStatus(e.target.value)} value={activeStatus}>
+                          {statusOptions.map((option) => (
+                            <option key={option.value} value={option.value}>{option.label}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <button className="inline-flex h-10 items-center justify-center gap-2 rounded bg-[#1b3a6b] text-sm font-semibold !text-white disabled:opacity-70" disabled={!activeStatus || Boolean(pendingAction)} onClick={() => void mutate(() => concernApi.status(selected.id, activeStatus), 'Concern status updated.')} type="button">
+                        {pendingAction === 'Concern status updated.' ? <Loader2 className="animate-spin" size={15} /> : <Send size={15} />} Update Status
+                      </button>
+                    </>
+                  ) : null}
                   <label className="grid gap-2 text-xs font-semibold">
                     Resolution report
                     <textarea className="min-h-24 rounded border px-3 py-2" onChange={(e) => setResolution(e.target.value)} value={resolution} />
                   </label>
-                  <button className="inline-flex h-10 items-center justify-center gap-2 rounded border border-green-700 text-sm font-semibold text-green-700 disabled:opacity-60" disabled={!resolution.trim() || Boolean(pendingAction)} onClick={() => void mutate(() => concernApi.resolve(selected.id, { summary: resolution, actionsTaken: resolution }), 'Resolution report submitted.')} type="button">
+                  <button className="inline-flex h-10 items-center justify-center gap-2 rounded border border-green-700 text-sm font-semibold text-green-700 disabled:opacity-60" disabled={!canResolveSelected || !resolution.trim() || Boolean(pendingAction)} onClick={() => void mutate(() => concernApi.resolve(selected.id, { summary: resolution, actionsTaken: resolution }), 'Resolution report submitted.')} type="button">
                     {pendingAction === 'Resolution report submitted.' ? <Loader2 className="animate-spin" size={15} /> : <CheckCircle2 size={15} />} Submit Resolution
                   </button>
                   <div className="border-t pt-4">
@@ -122,7 +166,7 @@ export function StaffConcerns({ role }: { role: Exclude<StaffRole, 'faculty'> })
                       </select>
                     </div>
                     <textarea className="mt-2 min-h-20 w-full rounded border px-3 py-2 text-sm" onChange={(e) => setReason(e.target.value)} placeholder="Transfer reason" value={reason} />
-                    <button className="mt-2 inline-flex h-10 w-full items-center justify-center gap-2 rounded border border-[#1b3a6b] text-sm font-semibold text-[#1b3a6b] disabled:opacity-60" disabled={!targetId || !reason.trim() || Boolean(pendingAction)} onClick={() => void mutate(() => concernApi.transfer(selected.id, { toTargetType: transferType, toOfficeId: transferType === 'OFFICE' ? targetId : null, toDepartmentId: transferType === 'DEPARTMENT' ? targetId : null, reason }), 'Concern transfer submitted.')} type="button">
+                    <button className="mt-2 inline-flex h-10 w-full items-center justify-center gap-2 rounded border border-[#1b3a6b] text-sm font-semibold text-[#1b3a6b] disabled:opacity-60" disabled={!canTransferSelected || !targetId || !reason.trim() || Boolean(pendingAction)} onClick={() => void mutate(() => concernApi.transfer(selected.id, { toTargetType: transferType, toOfficeId: transferType === 'OFFICE' ? targetId : null, toDepartmentId: transferType === 'DEPARTMENT' ? targetId : null, reason }), 'Concern transfer submitted.')} type="button">
                       {pendingAction === 'Concern transfer submitted.' ? <Loader2 className="animate-spin" size={15} /> : <Shuffle size={15} />} Transfer Concern
                     </button>
                   </div>

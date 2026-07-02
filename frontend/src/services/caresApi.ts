@@ -47,9 +47,15 @@ export const concernApi = {
     ).data
   },
   support: (id: string) => api.post(`/concerns/${id}/support`),
-  status: (id: string, status: string) => api.patch(`/concerns/${id}/status`, { status }),
-  transfer: (id: string, input: object) => api.post(`/concerns/${id}/transfer`, input),
-  resolve: (id: string, input: object) => api.post(`/concerns/${id}/resolution`, input),
+  status: async (id: string, status: string) =>
+    (await api.patch<ApiEnvelope<{ concern: ConcernRecord }>>(`/concerns/${id}/status`, { status }))
+      .data.data.concern,
+  transfer: async (id: string, input: object) =>
+    (await api.post<ApiEnvelope<{ concern: ConcernRecord }>>(`/concerns/${id}/transfer`, input))
+      .data.data.concern,
+  resolve: async (id: string, input: object) =>
+    (await api.post<ApiEnvelope<{ concern: ConcernRecord }>>(`/concerns/${id}/resolution`, input))
+      .data.data.concern,
   confirm: (id: string) => api.post(`/concerns/${id}/confirm`),
   rejectResolution: (id: string, reason: string) =>
     api.post(`/concerns/${id}/reject`, { reason }),

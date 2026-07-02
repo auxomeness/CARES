@@ -66,6 +66,7 @@ export function StudentFeed() {
   const [error, setError] = useState('')
   const [visibleCount, setVisibleCount] = useState(10)
   const [selectedConcern, setSelectedConcern] = useState<StudentConcern | null>(null)
+  const [supportedConcernIds, setSupportedConcernIds] = useState<Set<string>>(() => new Set())
   const loadMoreRef = useRef<HTMLDivElement | null>(null)
   const feed = useQuery({
     queryKey: queryKeys.concerns.public(debouncedSearch),
@@ -105,6 +106,8 @@ export function StudentFeed() {
 
   const support = async (id: string) => {
     setError('')
+    if (supportedConcernIds.has(id)) return
+    setSupportedConcernIds((current) => new Set(current).add(id))
     const previousPublicQueries = queryClient.getQueriesData<PaginatedEnvelope<ConcernRecord>>({
       queryKey: queryKeys.concerns.publicRoot,
     })
@@ -131,9 +134,14 @@ export function StudentFeed() {
     try {
       const concern = feed.data?.data.find((item) => item.referenceNumber === id || item.id === id)
       await concernApi.support(concern?.id ?? id)
-      await queryClient.invalidateQueries({ queryKey: queryKeys.concerns.publicRoot })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.notifications })
     } catch (failure) {
       previousPublicQueries.forEach(([key, value]) => queryClient.setQueryData(key, value))
+      setSupportedConcernIds((current) => {
+        const next = new Set(current)
+        next.delete(id)
+        return next
+      })
       setError(getApiErrorMessage(failure))
     }
   }
@@ -173,6 +181,7 @@ export function StudentFeed() {
               key={concern.apiId}
               onSelect={setSelectedConcern}
               onUp={support}
+              isSupported={supportedConcernIds.has(concern.apiId ?? concern.id)}
             />
           ))}
           {!feed.isLoading && concerns.length === 0 ? <p className="rounded border bg-white p-6 text-center text-sm">No public concerns.</p> : null}

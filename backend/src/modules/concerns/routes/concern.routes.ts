@@ -67,6 +67,12 @@ function uploadConcernImage(req: Request, res: Response, next: NextFunction): vo
 
 export const concernRoutes = Router();
 
+concernRoutes.get(
+  "/public",
+  validateRequest({ query: concernListQuerySchema }),
+  asyncHandler(concernController.getPublicConcerns)
+);
+
 concernRoutes.use(authenticate);
 
 concernRoutes.get(
@@ -74,12 +80,6 @@ concernRoutes.get(
   authorize(concernUsers),
   validateRequest({ query: concernListQuerySchema }),
   asyncHandler(concernController.getConcerns)
-);
-concernRoutes.get(
-  "/public",
-  authorize([UserRole.STUDENT]),
-  validateRequest({ query: concernListQuerySchema }),
-  asyncHandler(concernController.getPublicConcerns)
 );
 concernRoutes.post(
   "/",

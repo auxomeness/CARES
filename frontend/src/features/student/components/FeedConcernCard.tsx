@@ -7,16 +7,18 @@ type FeedConcernCardProps = {
   concern: StudentConcern
   onSelect?: (concern: StudentConcern) => void
   onUp: (id: string) => Promise<void>
+  isSupported?: boolean
 }
 
-export function FeedConcernCard({ concern, onSelect, onUp }: FeedConcernCardProps) {
+export function FeedConcernCard({ concern, onSelect, onUp, isSupported = false }: FeedConcernCardProps) {
   const [isReacting, setIsReacting] = useState(false)
 
   const handleUp = async (event: MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation()
+    if (isReacting || isSupported) return
     setIsReacting(true)
     try {
-      await onUp(concern.id)
+      await onUp(concern.apiId ?? concern.id)
     } finally {
       setIsReacting(false)
     }
@@ -70,7 +72,8 @@ export function FeedConcernCard({ concern, onSelect, onUp }: FeedConcernCardProp
         </div>
 
         <button
-          className="inline-flex h-[30px] min-w-[58px] items-center justify-center gap-1.5 rounded-[5px] bg-[#1b3a6b] px-3 text-[12px] font-semibold !text-white transition duration-200 hover:bg-[#295498] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9fbef1] active:scale-95 sm:min-w-[86px]"
+          className="inline-flex h-[30px] min-w-[58px] items-center justify-center gap-1.5 rounded-[5px] bg-[#1b3a6b] px-3 text-[12px] font-semibold !text-white transition duration-200 hover:bg-[#295498] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#9fbef1] active:scale-95 disabled:cursor-default disabled:bg-[#486b96] sm:min-w-[86px]"
+          disabled={isReacting || isSupported}
           onClick={(event) => void handleUp(event)}
           type="button"
         >

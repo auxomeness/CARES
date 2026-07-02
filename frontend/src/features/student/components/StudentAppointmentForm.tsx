@@ -52,6 +52,7 @@ export function StudentAppointmentForm() {
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [slots, setSlots] = useState<Array<{ startTime: string; endTime: string }>>([])
+  const [selectedSlotKey, setSelectedSlotKey] = useState('')
 
   const officesQuery = useQuery({
     queryKey: queryKeys.directory.form('office'),
@@ -82,8 +83,20 @@ export function StudentAppointmentForm() {
 
     void appointmentApi
       .slots(selectedTargetId, targetType, startTime.slice(0, 10))
-      .then((response) => setSlots(response.data?.slots ?? response.slots ?? []))
-      .catch(() => setSlots([]))
+      .then((response) => {
+        const nextSlots = (response.data?.slots ?? response.slots ?? []) as Array<{
+          startTime: string
+          endTime: string
+        }>
+        setSlots(nextSlots)
+        setSelectedSlotKey((current) =>
+          nextSlots.some((slot) => slot.startTime === current) ? current : '',
+        )
+      })
+      .catch(() => {
+        setSlots([])
+        setSelectedSlotKey('')
+      })
   }, [startTime, selectedTargetId, targetType])
 
   const chooseType = (type: typeof targetType) => {
@@ -99,6 +112,7 @@ export function StudentAppointmentForm() {
     : 'Not selected'
   const selectedDateKey = startTime.slice(0, 10)
   const calendarDays = getCalendarDays(calendarMonth)
+  const canSubmit = Boolean(selectedTargetId && selectedSlotKey && title.trim())
 
   const chooseDate = (date: Date) => {
     const dateKey = toDateKey(date)
@@ -110,6 +124,7 @@ export function StudentAppointmentForm() {
     const startValue = getTimeValue(startTime, '09:00')
     const endValue = getTimeValue(endTime, '09:30')
     setError('')
+    setSelectedSlotKey('')
     setStartTime(`${dateKey}T${startValue}`)
     setEndTime(`${dateKey}T${endValue}`)
   }
@@ -118,6 +133,7 @@ export function StudentAppointmentForm() {
     const nextStart = `${selectedDateKey}T${time}`
     const nextEnd = new Date(nextStart)
     nextEnd.setMinutes(nextEnd.getMinutes() + 30)
+    setSelectedSlotKey('')
     setStartTime(nextStart)
     setEndTime(toLocalInput(nextEnd))
   }
@@ -127,6 +143,9 @@ export function StudentAppointmentForm() {
     setIsSubmitting(true)
     setError('')
     try {
+      if (!selectedSlotKey) {
+        throw new Error('Choose one of the published available slots.')
+      }
       await addAppointment({
         mode: targetType === 'OFFICE' ? 'office' : 'department',
         office: '',
@@ -287,7 +306,10 @@ export function StudentAppointmentForm() {
                 <input
                   className="h-10 rounded border border-[#7fa8de] px-3"
                   min={getTimeValue(startTime, '09:00')}
-                  onChange={(event) => setEndTime(`${selectedDateKey}T${event.target.value}`)}
+                  onChange={(event) => {
+                    setSelectedSlotKey('')
+                    setEndTime(`${selectedDateKey}T${event.target.value}`)
+                  }}
                   required
                   type="time"
                   value={getTimeValue(endTime, '09:30')}
@@ -300,9 +322,14 @@ export function StudentAppointmentForm() {
             <div className="mt-2 flex flex-wrap gap-2">
               {slots.map((slot) => (
                 <button
-                  className="rounded border border-[#1b3a6b] px-3 py-2 text-xs font-semibold text-[#1b3a6b]"
+                  className={`rounded border border-[#1b3a6b] px-3 py-2 text-xs font-semibold transition ${
+                    selectedSlotKey === slot.startTime
+                      ? 'bg-[#1b3a6b] !text-white'
+                      : 'text-[#1b3a6b] hover:bg-[#edf4ff]'
+                  }`}
                   key={slot.startTime}
                   onClick={() => {
+                    setSelectedSlotKey(slot.startTime)
                     setStartTime(toLocalInput(new Date(slot.startTime)))
                     setEndTime(toLocalInput(new Date(slot.endTime)))
                   }}
@@ -315,7 +342,7 @@ export function StudentAppointmentForm() {
                 </button>
               ))}
               {slots.length === 0 ? (
-                <span className="text-xs text-[#707070]">No published slots for this date.</span>
+                <span className="text-xs text-[#707070]">No published slots for this date. Choose another date or target.</span>
               ) : null}
             </div>
           </div>
@@ -347,7 +374,7 @@ export function StudentAppointmentForm() {
               <dd className="m-0">{title || 'Not provided'}</dd>
             </div>
           </dl>
-          <button className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded bg-[#1b3a6b] text-sm font-semibold !text-white disabled:opacity-60" disabled={isSubmitting || !selectedTargetId} type="submit">
+          <button className="mt-5 inline-flex h-11 w-full items-center justify-center gap-2 rounded bg-[#1b3a6b] text-sm font-semibold !text-white disabled:opacity-60" disabled={isSubmitting || !canSubmit} type="submit">
             {isSubmitting ? <CalendarDays className="animate-pulse" size={16} /> : <Send size={16} />}
             {isSubmitting ? 'Booking...' : 'Book Appointment'}
           </button>
