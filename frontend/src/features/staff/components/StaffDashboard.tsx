@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { queryKeys } from '@/lib/queryKeys'
 import { appointmentApi, concernApi } from '@/services/caresApi'
 import type { StaffRole } from '../staffData'
 import { staffRoleConfigs } from '../staffData'
@@ -6,8 +7,8 @@ import { StaffWorkspaceShell } from './StaffWorkspaceShell'
 
 export function StaffDashboard({ role }: { role: StaffRole }) {
   const config = staffRoleConfigs[role]
-  const concerns = useQuery({ queryKey: ['concerns', 'dashboard'], queryFn: () => concernApi.list({ page: 1, limit: 100 }), enabled: role !== 'faculty' })
-  const appointments = useQuery({ queryKey: ['appointments', 'dashboard'], queryFn: () => appointmentApi.list({ page: 1, limit: 100 }) })
+  const concerns = useQuery({ queryKey: queryKeys.concerns.dashboard, queryFn: () => concernApi.list({ page: 1, limit: 100 }), enabled: role !== 'faculty' })
+  const appointments = useQuery({ queryKey: queryKeys.appointments.dashboard, queryFn: () => appointmentApi.list({ page: 1, limit: 100 }) })
   const concernData = concerns.data?.data ?? []
   const appointmentData = appointments.data?.data ?? []
   const metrics = role === 'faculty'

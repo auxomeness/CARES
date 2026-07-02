@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { LoadingLink } from '@/components/feedback/LoadingLink'
 import { directoryApi } from '@/services/caresApi'
 import type { DirectoryRecord, FacultyRecord } from '@/lib/apiTypes'
+import { queryKeys } from '@/lib/queryKeys'
 import { StudentWorkspaceShell } from './StudentWorkspaceShell'
 
 export function StudentDirectoryDetail() {
@@ -10,7 +11,7 @@ export function StudentDirectoryDetail() {
   const kind = match?.[1]
   const id = match?.[2]
   const record = useQuery<DirectoryRecord | FacultyRecord>({
-    queryKey: ['directory-detail', kind, id],
+    queryKey: queryKeys.directory.detail(kind as 'office' | 'department' | 'faculty' | undefined, id),
     enabled: Boolean(kind && id),
     queryFn: async () => {
       if (kind === 'office') return directoryApi.office(id!)

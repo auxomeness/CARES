@@ -42,6 +42,22 @@ button {
   -webkit-tap-highlight-color: transparent;
 }
 
+button,
+a[href^='#'] {
+  touch-action: manipulation;
+}
+
+button:not(:disabled),
+a[href^='#'] {
+  transition-property: transform, background-color, border-color, color, box-shadow, opacity;
+  transition-duration: 120ms;
+}
+
+button:not(:disabled):active,
+a[href^='#']:active {
+  transform: scale(0.98);
+}
+
 a {
   color: inherit;
 }

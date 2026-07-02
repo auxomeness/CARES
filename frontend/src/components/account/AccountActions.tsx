@@ -3,6 +3,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useAuth } from '@/features/auth/AuthContext'
 import { getApiErrorMessage } from '@/lib/api'
+import type { NotificationRecord, PaginatedEnvelope } from '@/lib/apiTypes'
+import { queryKeys } from '@/lib/queryKeys'
 import { notificationApi } from '@/services/caresApi'
 
 export function AccountActions() {
@@ -13,7 +15,7 @@ export function AccountActions() {
   const [lastName, setLastName] = useState(user?.lastName ?? '')
   const [error, setError] = useState('')
   const notifications = useQuery({
-    queryKey: ['notifications'],
+    queryKey: queryKeys.notifications,
     queryFn: () => notificationApi.list({ page: 1, limit: 20 }),
     enabled: Boolean(user),
   })
@@ -21,7 +23,33 @@ export function AccountActions() {
 
   if (!user) return null
 
-  const refresh = () => queryClient.invalidateQueries({ queryKey: ['notifications'] })
+  const refresh = () => queryClient.invalidateQueries({ queryKey: queryKeys.notifications })
+  const patchNotificationQueries = (
+    updater: (old: PaginatedEnvelope<NotificationRecord>) => PaginatedEnvelope<NotificationRecord>,
+  ) => {
+    queryClient.setQueriesData<PaginatedEnvelope<NotificationRecord>>(
+      { queryKey: queryKeys.notifications },
+      (old) => (old ? updater(old) : old),
+    )
+  }
+
+  const withOptimisticNotifications = async (
+    updater: (old: PaginatedEnvelope<NotificationRecord>) => PaginatedEnvelope<NotificationRecord>,
+    action: () => Promise<unknown>,
+  ) => {
+    setError('')
+    const previousQueries = queryClient.getQueriesData<PaginatedEnvelope<NotificationRecord>>({
+      queryKey: queryKeys.notifications,
+    })
+    patchNotificationQueries(updater)
+    try {
+      await action()
+      await refresh()
+    } catch (failure) {
+      previousQueries.forEach(([key, value]) => queryClient.setQueryData(key, value))
+      setError(getApiErrorMessage(failure))
+    }
+  }
 
   return (
     <>
@@ -61,25 +89,72 @@ export function AccountActions() {
             <>
               <button
                 className="mt-4 inline-flex h-9 items-center gap-2 rounded border px-3 text-xs font-semibold text-[#1b3a6b]"
-                onClick={() => void notificationApi.readAll().then(refresh)}
+                onClick={() =>
+                  void withOptimisticNotifications(
+                    (old) => ({
+                      ...old,
+                      data: old.data.map((notification) => ({ ...notification, isRead: true })),
+                      meta: { ...old.meta, unread: 0 },
+                    }),
+                    () => notificationApi.readAll(),
+                  )
+                }
                 type="button"
               >
                 <CheckCheck size={15} /> Mark all read
               </button>
               <div className="mt-4 grid gap-3">
+                {error ? <p className="rounded bg-red-50 px-3 py-2 text-xs font-semibold text-red-700">{error}</p> : null}
                 {notifications.isLoading ? <p className="text-sm">Loading...</p> : null}
                 {notifications.data?.data.map((notification) => (
                   <article className={`rounded border p-3 ${notification.isRead ? 'bg-white' : 'bg-[#edf4ff]'}`} key={notification.id}>
                     <button
                       className="w-full text-left"
-                      onClick={() => void notificationApi.read(notification.id).then(refresh)}
+                      onClick={() =>
+                        void withOptimisticNotifications(
+                          (old) => ({
+                            ...old,
+                            data: old.data.map((entry) =>
+                              entry.id === notification.id ? { ...entry, isRead: true } : entry,
+                            ),
+                            meta: {
+                              ...old.meta,
+                              unread: notification.isRead
+                                ? old.meta.unread
+                                : Math.max(0, (old.meta.unread ?? 0) - 1),
+                            },
+                          }),
+                          () => notificationApi.read(notification.id),
+                        )
+                      }
                       type="button"
                     >
                       <strong className="text-sm">{notification.title}</strong>
                       <p className="mt-1 text-xs text-[#434343]">{notification.message}</p>
                       <time className="mt-2 block text-[10px] text-[#707070]">{new Date(notification.createdAt).toLocaleString()}</time>
                     </button>
-                    <button className="mt-2 text-[10px] font-semibold text-red-700" onClick={() => void notificationApi.remove(notification.id).then(refresh)} type="button">Delete</button>
+                    <button
+                      className="mt-2 text-[10px] font-semibold text-red-700"
+                      onClick={() =>
+                        void withOptimisticNotifications(
+                          (old) => ({
+                            ...old,
+                            data: old.data.filter((entry) => entry.id !== notification.id),
+                            meta: {
+                              ...old.meta,
+                              total: Math.max(0, old.meta.total - 1),
+                              unread: notification.isRead
+                                ? old.meta.unread
+                                : Math.max(0, (old.meta.unread ?? 0) - 1),
+                            },
+                          }),
+                          () => notificationApi.remove(notification.id),
+                        )
+                      }
+                      type="button"
+                    >
+                      Delete
+                    </button>
                   </article>
                 ))}
                 {!notifications.isLoading && !notifications.data?.data.length ? <p className="text-sm">No notifications.</p> : null}

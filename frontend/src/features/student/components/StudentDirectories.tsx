@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader'
 import { LoadingLink } from '@/components/feedback/LoadingLink'
 import { SearchField } from '@/components/forms/SearchField'
+import { queryKeys } from '@/lib/queryKeys'
 import { directoryApi } from '@/services/caresApi'
 import type { DirectoryRecord, FacultyRecord, PaginatedEnvelope } from '@/lib/apiTypes'
 import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue'
@@ -42,7 +43,7 @@ export function StudentDirectories({ kind }: { kind?: DirectoryKind }) {
   const [search, setSearch] = useState('')
   const debouncedSearch = useDebouncedValue(search.trim())
   const result = useQuery<PaginatedEnvelope<DirectoryRecord | FacultyRecord>>({
-    queryKey: ['directory', kind, debouncedSearch],
+    queryKey: kind ? queryKeys.directory.list(kind, debouncedSearch) : queryKeys.directory.all,
     enabled: Boolean(kind),
     queryFn: async () => {
       const params = {

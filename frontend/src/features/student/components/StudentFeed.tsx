@@ -5,6 +5,8 @@ import { DashboardHeader } from '@/components/dashboard/DashboardHeader'
 import { LoadingLink } from '@/components/feedback/LoadingLink'
 import { SearchField } from '@/components/forms/SearchField'
 import { getApiErrorMessage } from '@/lib/api'
+import { queryKeys } from '@/lib/queryKeys'
+import type { ConcernRecord, PaginatedEnvelope } from '@/lib/apiTypes'
 import { concernApi } from '@/services/caresApi'
 import { useDebouncedValue } from '@/shared/hooks/useDebouncedValue'
 import type { StudentConcern } from '../studentData.types'
@@ -66,7 +68,7 @@ export function StudentFeed() {
   const [selectedConcern, setSelectedConcern] = useState<StudentConcern | null>(null)
   const loadMoreRef = useRef<HTMLDivElement | null>(null)
   const feed = useQuery({
-    queryKey: ['concerns', 'public', debouncedSearch],
+    queryKey: queryKeys.concerns.public(debouncedSearch),
     queryFn: () =>
       concernApi.publicFeed({
         page: 1,
@@ -103,11 +105,35 @@ export function StudentFeed() {
 
   const support = async (id: string) => {
     setError('')
+    const previousPublicQueries = queryClient.getQueriesData<PaginatedEnvelope<ConcernRecord>>({
+      queryKey: queryKeys.concerns.publicRoot,
+    })
+    queryClient.setQueriesData<PaginatedEnvelope<ConcernRecord>>(
+      { queryKey: queryKeys.concerns.publicRoot },
+      (old) =>
+        old
+          ? {
+              ...old,
+              data: old.data.map((item) =>
+                item.referenceNumber === id || item.id === id
+                  ? {
+                      ...item,
+                      _count: {
+                        supports: (item._count?.supports ?? 0) + 1,
+                        attachments: item._count?.attachments ?? 0,
+                      },
+                    }
+                  : item,
+              ),
+            }
+          : old,
+    )
     try {
       const concern = feed.data?.data.find((item) => item.referenceNumber === id || item.id === id)
       await concernApi.support(concern?.id ?? id)
-      await queryClient.invalidateQueries({ queryKey: ['concerns', 'public'] })
+      await queryClient.invalidateQueries({ queryKey: queryKeys.concerns.publicRoot })
     } catch (failure) {
+      previousPublicQueries.forEach(([key, value]) => queryClient.setQueryData(key, value))
       setError(getApiErrorMessage(failure))
     }
   }

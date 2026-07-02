@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { type ReactNode, useState } from 'react'
 import { StudentDataProvider } from '@/features/student/context/StudentDataContext'
 import { AuthProvider } from '@/features/auth/AuthContext'
+import { queryKeys } from '@/lib/queryKeys'
 
 type AppProvidersProps = {
   children: ReactNode
@@ -22,13 +23,21 @@ export function AppProviders({ children }: AppProvidersProps) {
       }),
   )
 
-  queryClient.setQueryDefaults(['directory'], {
+  queryClient.setQueryDefaults(queryKeys.directory.all, {
     staleTime: 10 * 60_000,
     gcTime: 30 * 60_000,
   })
-  queryClient.setQueryDefaults(['notifications'], {
-    staleTime: 20_000,
+  queryClient.setQueryDefaults(queryKeys.notifications, {
+    staleTime: 60_000,
     gcTime: 5 * 60_000,
+  })
+  queryClient.setQueryDefaults(queryKeys.concerns.all, {
+    staleTime: 60_000,
+    gcTime: 10 * 60_000,
+  })
+  queryClient.setQueryDefaults(queryKeys.appointments.all, {
+    staleTime: 60_000,
+    gcTime: 10 * 60_000,
   })
 
   return (

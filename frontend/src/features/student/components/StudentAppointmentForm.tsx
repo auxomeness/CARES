@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { type FormEvent, useEffect, useState } from 'react'
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader'
 import { getApiErrorMessage } from '@/lib/api'
+import { queryKeys } from '@/lib/queryKeys'
 import { directoryApi } from '@/services/caresApi'
 import { appointmentApi } from '@/services/caresApi'
 import { useStudentData } from '../context/studentDataStore'
@@ -53,17 +54,17 @@ export function StudentAppointmentForm() {
   const [slots, setSlots] = useState<Array<{ startTime: string; endTime: string }>>([])
 
   const officesQuery = useQuery({
-    queryKey: ['directory', 'office', 'form'],
+    queryKey: queryKeys.directory.form('office'),
     queryFn: () => directoryApi.offices({ page: 1, limit: 100 }),
     staleTime: 10 * 60_000,
   })
   const departmentsQuery = useQuery({
-    queryKey: ['directory', 'department', 'form'],
+    queryKey: queryKeys.directory.form('department'),
     queryFn: () => directoryApi.departments({ page: 1, limit: 100 }),
     staleTime: 10 * 60_000,
   })
   const facultyQuery = useQuery({
-    queryKey: ['directory', 'faculty', 'form'],
+    queryKey: queryKeys.directory.form('faculty'),
     queryFn: () => directoryApi.faculty({ page: 1, limit: 100 }),
     staleTime: 10 * 60_000,
   })

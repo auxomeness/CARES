@@ -1,8 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
+import { queryKeys } from '@/lib/queryKeys'
 import { notificationApi } from '@/services/caresApi'
 
 export function StudentRightPanel() {
-  const notifications = useQuery({ queryKey: ['notifications', 'right-panel'], queryFn: () => notificationApi.list({ page: 1, limit: 5 }) })
+  const notifications = useQuery({
+    queryKey: queryKeys.notificationsPanel,
+    queryFn: () => notificationApi.list({ page: 1, limit: 5 }),
+  })
   return (
     <aside className="hidden w-[350px] shrink-0 pt-[15px] xl:block">
       <section className="mt-[68px] rounded-[15px] border border-[#1b3a6b] bg-[#c1d9ff] p-4 shadow-[0_4px_4px_0_#1b3a6b]">

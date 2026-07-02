@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { type FormEvent, useState } from 'react'
 import { getApiErrorMessage } from '@/lib/api'
 import type { DirectoryRecord, FacultyRecord, PaginatedEnvelope, StudentRecord } from '@/lib/apiTypes'
+import { queryKeys } from '@/lib/queryKeys'
 import { adminApi, directoryApi } from '@/services/caresApi'
 import type { AdminSection } from '../adminData'
 import { AdminShell } from './AdminShell'
@@ -17,11 +18,11 @@ type Props = {
 export function AdminDirectoryPage({ createLabel, description, section, title }: Props) {
   const queryClient = useQueryClient()
   const departments = useQuery({
-    queryKey: ['departments'],
+    queryKey: queryKeys.directory.form('department'),
     queryFn: () => directoryApi.departments({ page: 1, limit: 100 }),
   })
   const records = useQuery<PaginatedEnvelope<DirectoryRecord | FacultyRecord | StudentRecord>>({
-    queryKey: ['admin-directory', section],
+    queryKey: queryKeys.directory.admin(section),
     queryFn: async () => {
       if (section === 'offices') return directoryApi.offices({ page: 1, limit: 100 })
       if (section === 'departments') return directoryApi.departments({ page: 1, limit: 100 })
@@ -51,7 +52,7 @@ export function AdminDirectoryPage({ createLabel, description, section, title }:
   const [edit, setEdit] = useState<Record<string, string> | null>(null)
   const selected = records.data?.data.find((item) => item?.id === selectedId) ?? records.data?.data[0]
 
-  const refresh = () => queryClient.invalidateQueries({ queryKey: ['admin-directory', section] })
+  const refresh = () => queryClient.invalidateQueries({ queryKey: queryKeys.directory.admin(section) })
   const set = (key: string, value: string) => setForm((current) => ({ ...current, [key]: value }))
 
   const create = async (event: FormEvent) => {

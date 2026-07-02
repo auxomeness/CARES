@@ -1,15 +1,16 @@
 import { useQuery } from '@tanstack/react-query'
+import { queryKeys } from '@/lib/queryKeys'
 import { directoryApi } from '@/services/caresApi'
 import { staffRoleConfigs } from '../staffData'
 import { StaffWorkspaceShell } from './StaffWorkspaceShell'
 
 export function StaffDirectory() {
   const faculty = useQuery({
-    queryKey: ['faculty', 'department-scope'],
+    queryKey: queryKeys.directory.list('faculty'),
     queryFn: () => directoryApi.faculty({ page: 1, limit: 100 }),
   })
   const students = useQuery({
-    queryKey: ['students', 'department-scope'],
+    queryKey: queryKeys.directory.students,
     queryFn: () => directoryApi.students({ page: 1, limit: 100 }),
   })
 

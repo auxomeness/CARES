@@ -1,12 +1,13 @@
 import { useQuery } from '@tanstack/react-query'
+import { queryKeys } from '@/lib/queryKeys'
 import { appointmentApi, concernApi, directoryApi } from '@/services/caresApi'
 import { AdminShell } from './AdminShell'
 
 export function AdminDashboard() {
-  const concerns = useQuery({ queryKey: ['admin', 'concerns'], queryFn: () => concernApi.list({ page: 1, limit: 100 }) })
-  const appointments = useQuery({ queryKey: ['admin', 'appointments'], queryFn: () => appointmentApi.list({ page: 1, limit: 100 }) })
-  const offices = useQuery({ queryKey: ['admin', 'offices'], queryFn: () => directoryApi.offices({ page: 1, limit: 100 }) })
-  const departments = useQuery({ queryKey: ['admin', 'departments'], queryFn: () => directoryApi.departments({ page: 1, limit: 100 }) })
+  const concerns = useQuery({ queryKey: queryKeys.concerns.staff, queryFn: () => concernApi.list({ page: 1, limit: 100 }) })
+  const appointments = useQuery({ queryKey: queryKeys.appointments.staff, queryFn: () => appointmentApi.list({ page: 1, limit: 100 }) })
+  const offices = useQuery({ queryKey: queryKeys.directory.list('office'), queryFn: () => directoryApi.offices({ page: 1, limit: 100 }) })
+  const departments = useQuery({ queryKey: queryKeys.directory.list('department'), queryFn: () => directoryApi.departments({ page: 1, limit: 100 }) })
   const metrics = [
     ['Concerns', concerns.data?.meta.total ?? 0],
     ['Appointments', appointments.data?.meta.total ?? 0],

@@ -1,9 +1,10 @@
-import { CheckCircle2, FileText, Paperclip, RotateCcw } from 'lucide-react'
+import { CheckCircle2, FileText, Loader2, Paperclip, RotateCcw } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader'
 import { LoadingLink } from '@/components/feedback/LoadingLink'
 import { getApiErrorMessage } from '@/lib/api'
+import { queryKeys } from '@/lib/queryKeys'
 import { concernApi } from '@/services/caresApi'
 import { useStudentData } from '../context/studentDataStore'
 import { getConcernStatusClass } from '../studentUi'
@@ -14,6 +15,7 @@ export function StudentConcerns() {
   const [selectedId, setSelectedId] = useState('')
   const [feedback, setFeedback] = useState('')
   const [actionError, setActionError] = useState('')
+  const [pendingAction, setPendingAction] = useState('')
   const selected = concerns.find((item) => item.apiId === selectedId) ?? concerns[0] ?? null
   const stats = [
     { label: 'Total Concerns Submitted', value: concerns.length },
@@ -22,19 +24,22 @@ export function StudentConcerns() {
     { label: 'Resolved', value: concerns.filter((item) => item.status === 'Completed').length },
   ]
   const detailQuery = useQuery({
-    queryKey: ['concern', selected?.apiId],
+    queryKey: queryKeys.concerns.detail(selected?.apiId),
     queryFn: () => concernApi.detail(selected!.apiId!),
     enabled: Boolean(selected?.apiId),
   })
   const detail = detailQuery.data ?? selected?.detail
 
-  const act = async (action: () => Promise<unknown>) => {
+  const act = async (action: () => Promise<unknown>, actionName: string) => {
     setActionError('')
+    setPendingAction(actionName)
     try {
       await action()
       await refresh()
     } catch (actionFailure) {
       setActionError(getApiErrorMessage(actionFailure))
+    } finally {
+      setPendingAction('')
     }
   }
 
@@ -124,11 +129,12 @@ export function StudentConcerns() {
               {selected.backendStatus === 'AWAITING_CONFIRMATION' && selected.apiId ? (
                 <div className="mt-6 grid gap-3">
                   <button
-                    className="inline-flex h-10 items-center justify-center gap-2 rounded bg-green-700 text-sm font-semibold text-white"
-                    onClick={() => void act(() => concernApi.confirm(selected.apiId!))}
+                    className="inline-flex h-10 items-center justify-center gap-2 rounded bg-green-700 text-sm font-semibold text-white disabled:opacity-60"
+                    disabled={Boolean(pendingAction)}
+                    onClick={() => void act(() => concernApi.confirm(selected.apiId!), 'confirm')}
                     type="button"
                   >
-                    <CheckCircle2 size={16} /> Confirm Fixed
+                    {pendingAction === 'confirm' ? <Loader2 className="animate-spin" size={16} /> : <CheckCircle2 size={16} />} Confirm Fixed
                   </button>
                   <textarea
                     className="min-h-20 rounded border px-3 py-2 text-sm"
@@ -137,12 +143,12 @@ export function StudentConcerns() {
                     value={feedback}
                   />
                   <button
-                    className="inline-flex h-10 items-center justify-center gap-2 rounded border border-red-700 text-sm font-semibold text-red-700"
-                    disabled={!feedback.trim()}
-                    onClick={() => void act(() => concernApi.rejectResolution(selected.apiId!, feedback))}
+                    className="inline-flex h-10 items-center justify-center gap-2 rounded border border-red-700 text-sm font-semibold text-red-700 disabled:opacity-60"
+                    disabled={!feedback.trim() || Boolean(pendingAction)}
+                    onClick={() => void act(() => concernApi.rejectResolution(selected.apiId!, feedback), 'reject')}
                     type="button"
                   >
-                    <RotateCcw size={16} /> Not Fixed
+                    {pendingAction === 'reject' ? <Loader2 className="animate-spin" size={16} /> : <RotateCcw size={16} />} Not Fixed
                   </button>
                 </div>
               ) : null}

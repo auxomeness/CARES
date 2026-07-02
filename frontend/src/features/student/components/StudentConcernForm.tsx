@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { type FormEvent, useState } from 'react'
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader'
 import { getApiErrorMessage } from '@/lib/api'
+import { queryKeys } from '@/lib/queryKeys'
 import { directoryApi } from '@/services/caresApi'
 import { useStudentData } from '../context/studentDataStore'
 import { StudentWorkspaceShell } from './StudentWorkspaceShell'
@@ -20,12 +21,12 @@ export function StudentConcernForm() {
   const [uploadProgress, setUploadProgress] = useState(0)
 
   const officesQuery = useQuery({
-    queryKey: ['directory', 'office', 'form'],
+    queryKey: queryKeys.directory.form('office'),
     queryFn: () => directoryApi.offices({ page: 1, limit: 100 }),
     staleTime: 10 * 60_000,
   })
   const departmentsQuery = useQuery({
-    queryKey: ['directory', 'department', 'form'],
+    queryKey: queryKeys.directory.form('department'),
     queryFn: () => directoryApi.departments({ page: 1, limit: 100 }),
     staleTime: 10 * 60_000,
   })

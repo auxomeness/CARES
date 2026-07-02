@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { type ReactNode, useCallback, useMemo } from 'react'
 import { getApiErrorMessage } from '@/lib/api'
+import { queryKeys } from '@/lib/queryKeys'
 import { useAuth } from '@/features/auth/AuthContext'
 import type { AppointmentRecord, ConcernRecord, PaginatedEnvelope } from '@/lib/apiTypes'
 import { appointmentApi, concernApi } from '@/services/caresApi'
@@ -100,14 +101,14 @@ export function StudentDataProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient()
   const enabled = user?.role === 'STUDENT'
   const concernsQuery = useQuery({
-    queryKey: ['concerns', 'mine'],
+    queryKey: queryKeys.concerns.mine,
     queryFn: () => concernApi.list({ page: 1, limit: 100 }),
     retry: false,
     staleTime: 30_000,
     enabled,
   })
   const appointmentsQuery = useQuery({
-    queryKey: ['appointments', 'mine'],
+    queryKey: queryKeys.appointments.mine,
     queryFn: () => appointmentApi.list({ page: 1, limit: 100 }),
     retry: false,
     staleTime: 30_000,
@@ -121,13 +122,13 @@ export function StudentDataProvider({ children }: { children: ReactNode }) {
   ]) => {
     await Promise.all([
       targets.includes('concerns')
-        ? queryClient.invalidateQueries({ queryKey: ['concerns'] })
+        ? queryClient.invalidateQueries({ queryKey: queryKeys.concerns.all })
         : Promise.resolve(),
       targets.includes('appointments')
-        ? queryClient.invalidateQueries({ queryKey: ['appointments'] })
+        ? queryClient.invalidateQueries({ queryKey: queryKeys.appointments.all })
         : Promise.resolve(),
       targets.includes('notifications')
-        ? queryClient.invalidateQueries({ queryKey: ['notifications'] })
+        ? queryClient.invalidateQueries({ queryKey: queryKeys.notifications })
         : Promise.resolve(),
     ])
   }, [queryClient])
@@ -151,7 +152,7 @@ export function StudentDataProvider({ children }: { children: ReactNode }) {
           targetOfficeId: input.targetOfficeId ?? null,
           targetDepartmentId: input.targetDepartmentId ?? null,
         })
-        queryClient.setQueryData<PaginatedEnvelope<ConcernRecord>>(['concerns', 'mine'], (old) =>
+        queryClient.setQueryData<PaginatedEnvelope<ConcernRecord>>(queryKeys.concerns.mine, (old) =>
           old
             ? {
                 ...old,
@@ -173,8 +174,37 @@ export function StudentDataProvider({ children }: { children: ReactNode }) {
         const record = (concernsQuery.data?.data ?? []).find(
           (concern) => concern.id === id || concern.referenceNumber === id,
         )
-        await concernApi.support(record?.id ?? id)
-        await refresh(['concerns', 'notifications'])
+        const concernId = record?.id ?? id
+        const previousPublicQueries = queryClient.getQueriesData<PaginatedEnvelope<ConcernRecord>>(
+          { queryKey: queryKeys.concerns.publicRoot },
+        )
+        queryClient.setQueriesData<PaginatedEnvelope<ConcernRecord>>(
+          { queryKey: queryKeys.concerns.publicRoot },
+          (old) =>
+            old
+              ? {
+                  ...old,
+                  data: old.data.map((concern) =>
+                    concern.id === concernId || concern.referenceNumber === id
+                      ? {
+                          ...concern,
+                          _count: {
+                            supports: (concern._count?.supports ?? 0) + 1,
+                            attachments: concern._count?.attachments ?? 0,
+                          },
+                        }
+                      : concern,
+                  ),
+                }
+              : old,
+        )
+        try {
+          await concernApi.support(record?.id ?? id)
+          await refresh(['concerns', 'notifications'])
+        } catch (failure) {
+          previousPublicQueries.forEach(([key, value]) => queryClient.setQueryData(key, value))
+          throw failure
+        }
       },
       addAppointment: async (input: AppointmentInput) => {
         const appointment = await appointmentApi.create({
@@ -188,7 +218,7 @@ export function StudentDataProvider({ children }: { children: ReactNode }) {
           endTime: input.endTime,
         })
         queryClient.setQueryData<PaginatedEnvelope<AppointmentRecord>>(
-          ['appointments', 'mine'],
+          queryKeys.appointments.mine,
           (old) =>
             old
               ? {

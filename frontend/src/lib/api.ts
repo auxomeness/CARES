@@ -19,13 +19,29 @@ export class ApiError extends Error {
   }
 }
 
+function resolveApiBaseUrl() {
+  const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL ?? import.meta.env.VITE_API_URL
+  if (configuredBaseUrl) return configuredBaseUrl
+  if (import.meta.env.DEV) return 'http://localhost:3000/api/v1'
+  return ''
+}
+
+const API_BASE_URL = resolveApiBaseUrl()
+
 export const api = axios.create({
-  baseURL:
-    import.meta.env.VITE_API_BASE_URL ?? import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api/v1',
+  baseURL: API_BASE_URL,
   timeout: 15_000,
 })
 
 api.interceptors.request.use((config) => {
+  if (!API_BASE_URL) {
+    return Promise.reject(
+      new ApiError(
+        'CARES API URL is not configured. Set VITE_API_BASE_URL to the deployed backend /api/v1 URL.',
+        0,
+      ),
+    )
+  }
   const token = localStorage.getItem(TOKEN_KEY)
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config
@@ -34,6 +50,8 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error: AxiosError<ApiErrorPayload>) => {
+    if (error instanceof ApiError) return Promise.reject(error)
+
     const status = error.response?.status ?? 0
     const payload = error.response?.data
 

@@ -1,4 +1,4 @@
-import { Ban, CalendarDays, Clock3, Plus } from 'lucide-react'
+import { Ban, CalendarDays, Clock3, Loader2, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader'
 import { LoadingLink } from '@/components/feedback/LoadingLink'
@@ -13,6 +13,7 @@ export function StudentAppointments() {
   const [actionError, setActionError] = useState('')
   const [newStartTime, setNewStartTime] = useState('')
   const [newEndTime, setNewEndTime] = useState('')
+  const [pendingAction, setPendingAction] = useState('')
   const [currentTime] = useState(() => Date.now())
   const selected = appointments.find((item) => item.id === selectedId) ?? appointments[0] ?? null
   const nextAppointment = [...appointments]
@@ -39,17 +40,21 @@ export function StudentAppointments() {
   const cancel = async () => {
     if (!selected) return
     setActionError('')
+    setPendingAction('cancel')
     try {
       await deleteAppointment(selected.id)
       await refresh()
     } catch (failure) {
       setActionError(getApiErrorMessage(failure))
+    } finally {
+      setPendingAction('')
     }
   }
 
   const reschedule = async () => {
     if (!selected || !newStartTime || !newEndTime) return
     setActionError('')
+    setPendingAction('reschedule')
     try {
       await updateAppointment(selected.id, {
         mode: selected.mode,
@@ -69,6 +74,8 @@ export function StudentAppointments() {
       await refresh()
     } catch (failure) {
       setActionError(getApiErrorMessage(failure))
+    } finally {
+      setPendingAction('')
     }
   }
 
@@ -140,11 +147,11 @@ export function StudentAppointments() {
                     End
                     <input className="h-10 rounded border px-3 text-sm" min={newStartTime} onChange={(event) => setNewEndTime(event.target.value)} type="datetime-local" value={newEndTime} />
                   </label>
-                  <button className="inline-flex h-10 w-full items-center justify-center gap-2 rounded bg-[#1b3a6b] text-sm font-semibold text-white disabled:opacity-50" disabled={!newStartTime || !newEndTime} onClick={() => void reschedule()} type="button">
-                    <Clock3 size={16} /> Reschedule
+                  <button className="inline-flex h-10 w-full items-center justify-center gap-2 rounded bg-[#1b3a6b] text-sm font-semibold text-white disabled:opacity-50" disabled={!newStartTime || !newEndTime || Boolean(pendingAction)} onClick={() => void reschedule()} type="button">
+                    {pendingAction === 'reschedule' ? <Loader2 className="animate-spin" size={16} /> : <Clock3 size={16} />} Reschedule
                   </button>
-                  <button className="inline-flex h-10 w-full items-center justify-center gap-2 rounded border border-red-700 text-sm font-semibold text-red-700" onClick={() => void cancel()} type="button">
-                    <Ban size={16} /> Cancel Appointment
+                  <button className="inline-flex h-10 w-full items-center justify-center gap-2 rounded border border-red-700 text-sm font-semibold text-red-700 disabled:opacity-50" disabled={Boolean(pendingAction)} onClick={() => void cancel()} type="button">
+                    {pendingAction === 'cancel' ? <Loader2 className="animate-spin" size={16} /> : <Ban size={16} />} Cancel Appointment
                   </button>
                 </div>
               ) : null}

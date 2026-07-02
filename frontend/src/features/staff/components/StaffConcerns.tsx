@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { getApiErrorMessage } from '@/lib/api'
 import type { DirectoryRecord } from '@/lib/apiTypes'
+import { queryKeys } from '@/lib/queryKeys'
 import { concernApi, directoryApi } from '@/services/caresApi'
 import type { StaffRole } from '../staffData'
 import { staffRoleConfigs } from '../staffData'
@@ -12,15 +13,15 @@ export function StaffConcerns({ role }: { role: Exclude<StaffRole, 'faculty'> })
   const config = staffRoleConfigs[role]
   const queryClient = useQueryClient()
   const concerns = useQuery({
-    queryKey: ['concerns', 'staff'],
+    queryKey: queryKeys.concerns.staff,
     queryFn: () => concernApi.list({ page: 1, limit: 100 }),
   })
   const offices = useQuery({
-    queryKey: ['offices'],
+    queryKey: queryKeys.directory.form('office'),
     queryFn: () => directoryApi.offices({ page: 1, limit: 100 }),
   })
   const departments = useQuery({
-    queryKey: ['departments'],
+    queryKey: queryKeys.directory.form('department'),
     queryFn: () => directoryApi.departments({ page: 1, limit: 100 }),
   })
   const [selectedId, setSelectedId] = useState('')
@@ -43,7 +44,7 @@ export function StaffConcerns({ role }: { role: Exclude<StaffRole, 'faculty'> })
     setPendingAction(successMessage)
     try {
       await action()
-      await queryClient.invalidateQueries({ queryKey: ['concerns'] })
+      await queryClient.invalidateQueries({ queryKey: queryKeys.concerns.all })
       setNotice(successMessage)
     } catch (failure) {
       setError(getApiErrorMessage(failure))
@@ -99,7 +100,6 @@ export function StaffConcerns({ role }: { role: Exclude<StaffRole, 'faculty'> })
                     <select className="h-10 rounded border px-3" onChange={(e) => setStatus(e.target.value)} value={status}>
                       <option value="UNDER_REVIEW">Under Review</option>
                       <option value="IN_PROGRESS">In Progress</option>
-                      {role === 'office' ? null : <option value="CLOSED">Closed</option>}
                     </select>
                   </label>
                   <button className="inline-flex h-10 items-center justify-center gap-2 rounded bg-[#1b3a6b] text-sm font-semibold !text-white disabled:opacity-70" disabled={Boolean(pendingAction)} onClick={() => void mutate(() => concernApi.status(selected.id, status), 'Concern status updated.')} type="button">

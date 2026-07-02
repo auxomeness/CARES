@@ -12,7 +12,12 @@ import { getAccessToken, setAccessToken } from '@/lib/api'
 import type { UserProfile } from '@/lib/apiTypes'
 import { getHomeHashForBackendRole } from '@/routes/roleRoutes'
 import { authApi, type AuthResult, type LoginInput, type RegisterInput } from './auth.api'
-import { hydrateBootstrapCache } from './bootstrapCache'
+import {
+  clearStoredBootstrap,
+  hydrateBootstrapCache,
+  readStoredBootstrap,
+  writeStoredBootstrap,
+} from './bootstrapCache'
 
 type AuthContextValue = {
   user: UserProfile | null
@@ -32,16 +37,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const restore = async () => {
-      if (!getAccessToken()) {
+      const token = getAccessToken()
+      if (!token) {
         setIsRestoring(false)
         return
+      }
+      const cachedBootstrap = readStoredBootstrap(token)
+      if (cachedBootstrap) {
+        hydrateBootstrapCache(queryClient, cachedBootstrap)
+        setUser(cachedBootstrap.user)
+        setIsRestoring(false)
       }
       try {
         const bootstrap = await authApi.bootstrap()
         hydrateBootstrapCache(queryClient, bootstrap)
+        writeStoredBootstrap(token, bootstrap)
         setUser(bootstrap.user)
       } catch {
         setAccessToken(null)
+        clearStoredBootstrap()
         queryClient.clear()
       } finally {
         setIsRestoring(false)
@@ -50,6 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const unauthorized = () => {
       setUser(null)
+      clearStoredBootstrap()
       queryClient.clear()
       if (!['#login', '#register'].includes(window.location.hash)) window.location.hash = '#login'
     }
@@ -64,6 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const result = await action()
       setAccessToken(result.accessToken)
       hydrateBootstrapCache(queryClient, result.bootstrap)
+      writeStoredBootstrap(result.accessToken, result.bootstrap)
       const nextUser = result.bootstrap?.user ?? result.user
       setUser(nextUser)
       window.location.hash = getHomeHashForBackendRole(nextUser.role)
@@ -79,6 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       register: (input) => authenticate(() => authApi.register(input)),
       logout: () => {
         setAccessToken(null)
+        clearStoredBootstrap()
         setUser(null)
         queryClient.clear()
         window.location.hash = '#login'
