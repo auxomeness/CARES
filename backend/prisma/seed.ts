@@ -211,44 +211,61 @@ async function seedUsers(passwordHash: string): Promise<void> {
 }
 
 async function seedDepartments() {
-  const records = await Promise.all(
-    departments.map((department) =>
-      prisma.department.upsert({
-        where: { name: department.name },
-        update: {
-          description: department.description,
-          email: department.email,
-          location: department.location
-        },
-        create: {
-          name: department.name,
-          description: department.description,
-          email: department.email,
-          location: department.location
-        }
-      })
-    )
-  );
+  const records = await Promise.all(departments.map((department) => upsertDepartment(department)));
 
   return new Map(records.map((department) => [department.name, department]));
 }
 
 async function seedOffices() {
-  const records = await Promise.all(
-    offices.map((office) =>
-      prisma.office.upsert({
-        where: { name: office.name },
-        update: {
-          description: office.description,
-          email: office.email,
-          location: office.location
-        },
-        create: office
-      })
-    )
-  );
+  const records = await Promise.all(offices.map((office) => upsertOffice(office)));
 
   return new Map(records.map((office) => [office.name, office]));
+}
+
+async function upsertDepartment(department: DepartmentSeed) {
+  const existing = await prisma.department.findFirst({
+    where: {
+      OR: [{ name: department.name }, { email: department.email }]
+    }
+  });
+
+  if (existing) {
+    return prisma.department.update({
+      where: { id: existing.id },
+      data: {
+        name: department.name,
+        description: department.description,
+        email: department.email,
+        location: department.location
+      }
+    });
+  }
+
+  return prisma.department.create({
+    data: {
+      name: department.name,
+      description: department.description,
+      email: department.email,
+      location: department.location
+    }
+  });
+}
+
+async function upsertOffice(office: OfficeSeed) {
+  const existing = await prisma.office.findFirst({
+    where: {
+      OR: [{ name: office.name }, { email: office.email }]
+    }
+  });
+
+  if (existing) {
+    return prisma.office.update({
+      where: { id: existing.id },
+      data: office
+    });
+  }
+
+  return prisma.office.create({ data: office });
 }
 
 async function seedOfficeStaff(
