@@ -2,6 +2,7 @@ import { Check, CheckCircle2, Loader2, X } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { getApiErrorMessage } from '@/lib/api'
+import type { AppointmentRecord, PaginatedEnvelope } from '@/lib/apiTypes'
 import { queryKeys } from '@/lib/queryKeys'
 import { appointmentApi } from '@/services/caresApi'
 import type { StaffRole } from '../staffData'
@@ -28,13 +29,33 @@ export function StaffAppointments({ role }: { role: StaffRole }) {
     appointments.data?.data[0] ??
     null
 
-  const mutate = async (action: () => Promise<unknown>, successMessage: string) => {
+  const patchAppointmentCache = (updated: AppointmentRecord) => {
+    queryClient.setQueriesData<PaginatedEnvelope<AppointmentRecord>>(
+      { queryKey: queryKeys.appointments.all },
+      (old) =>
+        old
+          ? {
+              ...old,
+              data: old.data.map((appointment) =>
+                appointment.id === updated.id ? { ...appointment, ...updated } : appointment,
+              ),
+            }
+          : old,
+    )
+  }
+
+  const mutate = async (
+    action: () => Promise<AppointmentRecord | unknown>,
+    successMessage: string,
+  ) => {
     setError('')
     setNotice('')
     setPendingAction(successMessage)
     try {
-      await action()
-      await queryClient.invalidateQueries({ queryKey: queryKeys.appointments.all })
+      const result = await action()
+      if (result && typeof result === 'object' && 'id' in result) {
+        patchAppointmentCache(result as AppointmentRecord)
+      }
       setNotice(successMessage)
     } catch (failure) {
       setError(getApiErrorMessage(failure))
@@ -68,18 +89,18 @@ export function StaffAppointments({ role }: { role: StaffRole }) {
               <h3 className="text-lg font-semibold">{selected.title}</h3>
               <p className="text-sm">{selected.description || 'No description'}</p>
               {selected.status === 'PENDING' ? (
-                <button className="inline-flex h-10 items-center justify-center gap-2 rounded bg-green-700 text-sm font-semibold !text-white disabled:opacity-70" disabled={Boolean(pendingAction)} onClick={() => void mutate(() => appointmentApi.approve(selected.id), 'Appointment approved.')} type="button">
+                <button className="inline-flex h-10 items-center justify-center gap-2 rounded bg-green-700 text-sm font-semibold !text-white disabled:opacity-70" disabled={selected.status !== 'PENDING' || Boolean(pendingAction)} onClick={() => void mutate(() => appointmentApi.approve(selected.id), 'Appointment approved.')} type="button">
                   {pendingAction === 'Appointment approved.' ? <Loader2 className="animate-spin" size={16} /> : <Check size={16} />} Approve
                 </button>
               ) : null}
               <textarea className="min-h-20 rounded border px-3 py-2 text-sm" onChange={(e) => setReason(e.target.value)} placeholder="Reason required for rejection" value={reason} />
               {selected.status === 'PENDING' ? (
-                <button className="inline-flex h-10 items-center justify-center gap-2 rounded border border-red-700 text-sm font-semibold text-red-700 disabled:opacity-60" disabled={!reason.trim() || Boolean(pendingAction)} onClick={() => void mutate(() => appointmentApi.reject(selected.id, reason), 'Appointment rejected.')} type="button">
+                <button className="inline-flex h-10 items-center justify-center gap-2 rounded border border-red-700 text-sm font-semibold text-red-700 disabled:opacity-60" disabled={selected.status !== 'PENDING' || !reason.trim() || Boolean(pendingAction)} onClick={() => void mutate(() => appointmentApi.reject(selected.id, reason), 'Appointment rejected.')} type="button">
                   {pendingAction === 'Appointment rejected.' ? <Loader2 className="animate-spin" size={16} /> : <X size={16} />} Reject
                 </button>
               ) : null}
               {selected.status === 'APPROVED' ? (
-                <button className="inline-flex h-10 items-center justify-center gap-2 rounded bg-[#1b3a6b] text-sm font-semibold !text-white disabled:opacity-70" disabled={Boolean(pendingAction)} onClick={() => void mutate(() => appointmentApi.complete(selected.id), 'Appointment marked completed.')} type="button">
+                <button className="inline-flex h-10 items-center justify-center gap-2 rounded bg-[#1b3a6b] text-sm font-semibold !text-white disabled:opacity-70" disabled={selected.status !== 'APPROVED' || Boolean(pendingAction)} onClick={() => void mutate(() => appointmentApi.complete(selected.id), 'Appointment marked completed.')} type="button">
                   {pendingAction === 'Appointment marked completed.' ? <Loader2 className="animate-spin" size={16} /> : <CheckCircle2 size={16} />} Complete
                 </button>
               ) : null}

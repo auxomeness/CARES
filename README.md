@@ -6,7 +6,7 @@ The system centralizes communication between students, university offices, acade
 
 ## Version
 
-1.0.1
+1.0.2
 
 ## Author
 

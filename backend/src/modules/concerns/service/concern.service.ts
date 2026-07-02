@@ -126,6 +126,12 @@ export const concernService = {
     const access = await getConcernAccess(id);
     await assertCanHandleConcern(actor, access);
 
+    if (access.status === input.status) {
+      const concern = await concernRepository.findById(id);
+      if (!concern) throw new NotFoundError("Concern not found");
+      return concern;
+    }
+
     if (input.status === ConcernStatus.CLOSED) {
       if (actor.role !== UserRole.ADMIN) {
         throw new ForbiddenError("Only administrators can close concerns");
@@ -165,7 +171,9 @@ export const concernService = {
       input.toDepartmentId === access.targetDepartmentId;
 
     if (isSameOffice || isSameDepartment) {
-      throw new BadRequestError("Transfer target must differ from the current target");
+      const concern = await concernRepository.findById(id);
+      if (!concern) throw new NotFoundError("Concern not found");
+      return concern;
     }
 
     const concern = await concernRepository.transfer(id, actor.id, input, {
@@ -293,7 +301,11 @@ export const concernService = {
       throw new ForbiddenError("Only public concerns can receive support");
     }
     if (access.submittedBy.userId === actor.id) {
-      throw new ConflictError("You cannot support your own concern");
+      return {
+        concernId: id,
+        studentId: student.id,
+        alreadySupported: true
+      };
     }
 
     try {
@@ -312,7 +324,13 @@ export const concernService = {
       return support;
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
-        throw new ConflictError("You already support this concern");
+        return (
+          (await concernRepository.findSupport(id, student.id)) ?? {
+            concernId: id,
+            studentId: student.id,
+            alreadySupported: true
+          }
+        );
       }
       throw error;
     }

@@ -69,11 +69,29 @@ export const appointmentApi = {
   create: async (input: object) =>
     (await api.post<ApiEnvelope<{ appointment: AppointmentRecord }>>('/appointments', input)).data
       .data.appointment,
-  approve: (id: string) => api.patch(`/appointments/${id}/approve`),
-  reject: (id: string, reason: string) => api.patch(`/appointments/${id}/reject`, { reason }),
-  cancel: (id: string) => api.patch(`/appointments/${id}/cancel`),
-  reschedule: (id: string, input: object) => api.post(`/appointments/${id}/reschedule`, input),
-  complete: (id: string) => api.patch(`/appointments/${id}/complete`),
+  approve: async (id: string) =>
+    (await api.patch<ApiEnvelope<{ appointment: AppointmentRecord }>>(`/appointments/${id}/approve`))
+      .data.data.appointment,
+  reject: async (id: string, reason: string) =>
+    (
+      await api.patch<ApiEnvelope<{ appointment: AppointmentRecord }>>(
+        `/appointments/${id}/reject`,
+        { reason },
+      )
+    ).data.data.appointment,
+  cancel: async (id: string) =>
+    (await api.patch<ApiEnvelope<{ appointment: AppointmentRecord }>>(`/appointments/${id}/cancel`))
+      .data.data.appointment,
+  reschedule: async (id: string, input: object) =>
+    (
+      await api.post<ApiEnvelope<{ appointment: AppointmentRecord }>>(
+        `/appointments/${id}/reschedule`,
+        input,
+      )
+    ).data.data.appointment,
+  complete: async (id: string) =>
+    (await api.patch<ApiEnvelope<{ appointment: AppointmentRecord }>>(`/appointments/${id}/complete`))
+      .data.data.appointment,
   availability: async (ownerId: string, targetType?: string) =>
     (await api.get(`/availability/${ownerId}`, { params: { targetType } })).data,
   slots: async (ownerId: string, targetType: string, date: string) =>
@@ -82,7 +100,9 @@ export const appointmentApi = {
         params: { targetType, date },
       })
     ).data,
-  createAvailability: (input: object) => api.post('/availability', input),
+  createAvailability: async (input: object) =>
+    (await api.post<ApiEnvelope<{ availability: unknown }>>('/availability', input)).data.data
+      .availability,
 }
 
 export const notificationApi = {

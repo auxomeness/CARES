@@ -255,13 +255,38 @@ async function seedOfficeStaff(
   officeMap: Awaited<ReturnType<typeof seedOffices>>,
   passwordHash: string
 ): Promise<void> {
-  const office = officeMap.get("MIS");
+  for (const officeSeed of offices) {
+    const office = officeMap.get(officeSeed.name);
 
-  if (!office) {
+    if (!office) {
+      throw new Error(`${officeSeed.name} office not found after seed`);
+    }
+
+    const user = await upsertUser({
+      email: officeSeed.email,
+      firstName: officeSeed.name,
+      lastName: "Staff",
+      role: UserRole.OFFICE_STAFF,
+      passwordHash
+    });
+
+    await prisma.officeStaffProfile.upsert({
+      where: { userId: user.id },
+      update: { officeId: office.id },
+      create: {
+        userId: user.id,
+        officeId: office.id
+      }
+    });
+  }
+
+  const misOffice = officeMap.get("MIS");
+
+  if (!misOffice) {
     throw new Error("MIS office not found after seed");
   }
 
-  const user = await upsertUser({
+  const legacyUser = await upsertUser({
     email: "office.staff@adnu.edu.ph",
     firstName: "Office",
     lastName: "Staff",
@@ -270,11 +295,11 @@ async function seedOfficeStaff(
   });
 
   await prisma.officeStaffProfile.upsert({
-    where: { userId: user.id },
-    update: { officeId: office.id },
+    where: { userId: legacyUser.id },
+    update: { officeId: misOffice.id },
     create: {
-      userId: user.id,
-      officeId: office.id
+      userId: legacyUser.id,
+      officeId: misOffice.id
     }
   });
 }
@@ -429,8 +454,10 @@ async function validateSeedData(): Promise<void> {
     throw new Error(`Expected at least ${students.length} student profiles, found ${studentCount}`);
   }
 
-  if (officeStaffCount < 1) {
-    throw new Error("Expected at least one office staff profile");
+  if (officeStaffCount < offices.length) {
+    throw new Error(
+      `Expected at least ${offices.length} office staff profiles, found ${officeStaffCount}`
+    );
   }
 }
 

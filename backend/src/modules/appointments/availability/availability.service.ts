@@ -23,7 +23,22 @@ export const availabilityService = {
     await ensureTargetExists(target);
     validateAvailabilityWindow(input.startTime, input.endTime, input.slotDuration);
     if (input.isActive) {
-      await ensureNoAvailabilityOverlap(target, input.dayOfWeek, input.startTime, input.endTime);
+      const overlap = await findAvailabilityOverlap(
+        target,
+        input.dayOfWeek,
+        input.startTime,
+        input.endTime
+      );
+      if (overlap) {
+        if (
+          overlap.startTime === input.startTime &&
+          overlap.endTime === input.endTime &&
+          overlap.slotDuration === input.slotDuration
+        ) {
+          return overlap;
+        }
+        throw new ConflictError("Availability window overlaps an existing schedule");
+      }
     }
 
     return availabilityRepository.create(input, actor.id, target);
@@ -278,23 +293,19 @@ async function ensureOwnerExists(
   if (!exists) throw new NotFoundError("Availability owner not found");
 }
 
-async function ensureNoAvailabilityOverlap(
+async function findAvailabilityOverlap(
   target: AppointmentTarget,
   dayOfWeek: number,
   startTime: string,
   endTime: string
-): Promise<void> {
+) {
   const schedules = await availabilityRepository.findByTarget(target, true);
-  if (
-    schedules.some(
-      (schedule) =>
-        schedule.dayOfWeek === dayOfWeek &&
-        startTime < schedule.endTime &&
-        endTime > schedule.startTime
-    )
-  ) {
-    throw new ConflictError("Availability window overlaps an existing schedule");
-  }
+  return schedules.find(
+    (schedule) =>
+      schedule.dayOfWeek === dayOfWeek &&
+      startTime < schedule.endTime &&
+      endTime > schedule.startTime
+  );
 }
 
 function validateAvailabilityWindow(

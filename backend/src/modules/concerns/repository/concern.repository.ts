@@ -253,8 +253,12 @@ export const concernRepository = {
         where: { id },
         data: {
           targetType: input.toTargetType,
-          targetOfficeId: input.toOfficeId,
-          targetDepartmentId: input.toDepartmentId,
+          targetOfficeId:
+            input.toTargetType === ConcernTargetType.OFFICE ? input.toOfficeId ?? null : null,
+          targetDepartmentId:
+            input.toTargetType === ConcernTargetType.DEPARTMENT
+              ? input.toDepartmentId ?? null
+              : null,
           status: ConcernStatus.TRANSFERRED,
           resolvedAt: null
         }
@@ -364,6 +368,17 @@ export const concernRepository = {
       );
 
       return support;
+    });
+  },
+
+  findSupport(id: string, studentId: string) {
+    return prisma.concernSupport.findUnique({
+      where: {
+        concernId_studentId: {
+          concernId: id,
+          studentId
+        }
+      }
     });
   },
 
