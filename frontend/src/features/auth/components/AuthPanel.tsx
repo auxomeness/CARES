@@ -20,7 +20,7 @@ export function AuthPanel({ config, mode, onModeChange }: AuthPanelProps) {
       <MobileHero config={config} isRegister={isRegister} />
 
       {!isRegister ? (
-        <p className="fixed bottom-3 left-3 z-20 m-0 text-[11px] font-semibold leading-none text-[#1b3a6b]/70 lg:bottom-5 lg:left-5">
+        <p className="fixed bottom-4 left-4 z-50 m-0 rounded bg-black/30 px-2 py-1 text-[11px] font-semibold leading-none text-white shadow-sm backdrop-blur-sm">
           v1.0.0
         </p>
       ) : null}
